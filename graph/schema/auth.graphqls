@@ -1,0 +1,17 @@
+type LoginResponse{
+    jwt: String
+    error: String
+}
+
+type EmailRequestResponse{
+    sent: Boolean!
+    message: String!
+}
+
+type Auth{
+    login(token: String!):LoginResponse
+    requestLoginEmail(email:String!):EmailRequestResponse
+}
+extend type Mutation{
+    auth: Auth!
+}
