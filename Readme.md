@@ -5,4 +5,5 @@ To run it locally, clone it and run
 
 ```bash
 go run github.com/99designs/gqlgen generate
+go run .
 ```
