@@ -16,7 +16,10 @@ func (r *mutationResolver) CreateUser(ctx context.Context, user model.NewUser) (
 }
 
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	return &model.User{
+		ID:   "1",
+		Name: "John Doe",
+	}, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.
