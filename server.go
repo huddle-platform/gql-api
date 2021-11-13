@@ -15,7 +15,7 @@ import (
 const port = "8080"
 
 func main() {
-	resolver,err:=resolvers.NewResolver(os.Getenv("DB_CONNECTION_STRING"))
+	resolver,err:=resolvers.NewResolver(os.ExpandEnv(os.Getenv("DB_CONNECTION_STRING")))
 	if err!=nil{
 		log.Fatal(err)
 	}
