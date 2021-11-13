@@ -22,6 +22,23 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	}, nil
 }
 
+func (r *queryResolver) Messages(ctx context.Context) ([]*model.Mesage, error) {
+	res, err := r.pool.Query(ctx, "SELECT * FROM messages")
+	if err != nil {
+		return nil, err
+	}
+	var messages []*model.Mesage
+	for res.Next() {
+		var msg model.Mesage
+		err = res.Scan(&msg.ID, &msg.Message)
+		if err != nil {
+			return nil, err
+		}
+		messages = append(messages, &msg)
+	}
+	return messages, nil
+}
+
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 

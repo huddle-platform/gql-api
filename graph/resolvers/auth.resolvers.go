@@ -36,4 +36,3 @@ func (r *mutationResolver) Auth(ctx context.Context) (*model.Auth, error) {
 func (r *Resolver) Auth() generated.AuthResolver { return &authResolver{r} }
 
 type authResolver struct{ *Resolver }
-

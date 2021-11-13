@@ -8,8 +8,14 @@ type User{
   name: String!
 }
 
+type Mesage{
+  id: ID!
+  message: String!
+}
+
 type Query{
   me: User
+  messages: [Mesage!]!
 }
 
 input NewUser{
