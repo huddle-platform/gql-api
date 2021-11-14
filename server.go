@@ -21,9 +21,9 @@ func main() {
 	}
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
 
-	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
+	http.Handle("/api", playground.Handler("GraphQL playground", "/api/query"))
 	corsHandler := cors.Default().Handler(srv)
-	http.Handle("/query", corsHandler)
+	http.Handle("/api/query", corsHandler)
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
