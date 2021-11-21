@@ -1,9 +1,12 @@
 package resolvers
 
 import (
-	"context"
+	dbsql "database/sql"
 
-	"github.com/jackc/pgx/v4/pgxpool"
+	"gitlab.lrz.de/projecthub/gql-api/sql"
+
+	_ "github.com/lib/pq"
+
 )
 
 // This file will not be regenerated automatically.
@@ -11,16 +14,18 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	pool *pgxpool.Pool
+	queries *sql.Queries
 }
 
 func NewResolver(connstring string) (*Resolver, error) {
-	db, err := pgxpool.Connect(context.Background(), connstring)
+	//db, err := pgxpool.Connect(context.Background(), connstring)
+	db, err := dbsql.Open("postgres", connstring)
 	if err != nil {
 		return nil, err
 	}
+	queries := sql.New(db)
 	return &Resolver{
-		pool: db,
+		queries: queries,
 	}, nil
 }
 

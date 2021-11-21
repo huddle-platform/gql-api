@@ -6,23 +6,38 @@ package resolvers
 import (
 	"context"
 	"fmt"
+	dbsql"database/sql"
 
 	"gitlab.lrz.de/projecthub/gql-api/graph/generated"
 	"gitlab.lrz.de/projecthub/gql-api/graph/model"
+	"gitlab.lrz.de/projecthub/gql-api/sql"
 )
 
 func (r *mutationResolver) CreateProject(ctx context.Context, project *model.NewProjectInput) (*model.Project, error) {
+	projectID, err := r.queries.CreateProject(ctx, sql.CreateProjectParams{Name: project.Name, Description: project.Description})
+	if err != nil {
+		return nil, err
+	}
+	roleId, err := r.queries.AddRole(ctx, sql.AddRoleParams{Type: "project-admin",ProjectID: dbsql.NullInt32{Int32:projectID}})
+	if err != nil {
+		return nil, err
+	}
+	err=r.queries.GrantRoleToUser(ctx,sql.GrantRoleToUserParams{UserID: 1,RoleID: roleId})
+	if err != nil {
+		return nil, err
+	}
+	fetchedProject, err := r.queries.GetProjectByID(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
 	return &model.Project{
-		ID:             "1",
-		Name:           "test",
-		Description:    "Example Project. We are doing great stuff.",
-		Languages:      []string{"DE", "EN"},
-		Location:       &model.Location{Name: "Online"},
-		ParticipantIDs: []string{"1234", "5353"},
+		ID:          int(fetchedProject.ID),
+		Name:        fetchedProject.Name,
+		Description: fetchedProject.Description,
 	}, nil
 }
 
-func (r *mutationResolver) AddSavedProject(ctx context.Context, id string) ([]*model.Project, error) {
+func (r *mutationResolver) AddSavedProject(ctx context.Context, id int) ([]*model.Project, error) {
 	return []*model.Project{}, nil
 }
 
@@ -31,17 +46,17 @@ func (r *projectResolver) Participants(ctx context.Context, obj *model.Project) 
 	for i, id := range obj.ParticipantIDs {
 		participants[i] = &model.User{
 			ID:       id,
-			Username: "user-" + id,
+			Username: "user-" + string(id),
 		}
 	}
 	return participants, nil
 }
 
-func (r *projectResolver) AddParticipant(ctx context.Context, obj *model.Project, id string) ([]*model.User, error) {
+func (r *projectResolver) AddParticipant(ctx context.Context, obj *model.Project, id int) ([]*model.User, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *projectResolver) RemoveParticipant(ctx context.Context, obj *model.Project, id string) ([]*model.User, error) {
+func (r *projectResolver) RemoveParticipant(ctx context.Context, obj *model.Project, id int) ([]*model.User, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
@@ -50,26 +65,26 @@ func (r *queryResolver) SearchProjects(ctx context.Context, searchString string,
 
 	for i := 0; i < count; i++ {
 		results[i] = &model.Project{
-			ID:             string(i),
+			ID:             (i),
 			Name:           "Project number" + string(i),
 			Description:    "Description of project" + string(i),
 			Languages:      []string{"DE"},
 			Location:       &model.Location{Name: "Location" + string(i)},
-			ParticipantIDs: []string{"1234", "5345"},
+			ParticipantIDs: []int{1234, 5345},
 		}
 	}
 
 	return results, nil
 }
 
-func (r *queryResolver) GetProject(ctx context.Context, id string) (*model.Project, error) {
+func (r *queryResolver) GetProject(ctx context.Context, id int) (*model.Project, error) {
 	return &model.Project{
-		ID:             string(id),
+		ID:             (id),
 		Name:           "Project number" + string(id),
 		Description:    "Description of project" + string(id),
 		Languages:      []string{"DE"},
 		Location:       &model.Location{Name: "Location" + string(id)},
-		ParticipantIDs: []string{"1234", "5345"}}, nil
+		ParticipantIDs: []int{1234, 5345}}, nil
 }
 
 func (r *queryResolver) SavedProjects(ctx context.Context) ([]*model.Project, error) {
@@ -77,15 +92,13 @@ func (r *queryResolver) SavedProjects(ctx context.Context) ([]*model.Project, er
 
 	for i := 0; i < 10; i++ {
 		results[i] = &model.Project{
-			ID:             string(i),
+			ID:             (i),
 			Name:           "Project number" + string(i),
 			Description:    "Description of project" + string(i),
 			Languages:      []string{"DE"},
 			Location:       &model.Location{Name: "Location" + string(i)},
-			ParticipantIDs: []string{"1234", "5345"},
-		}
+			ParticipantIDs: []int{1234, 5345}}
 	}
-
 	return results, nil
 }
 
@@ -93,13 +106,3 @@ func (r *queryResolver) SavedProjects(ctx context.Context) ([]*model.Project, er
 func (r *Resolver) Project() generated.ProjectResolver { return &projectResolver{r} }
 
 type projectResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-func (r *mutationResolver) SaveProject(ctx context.Context, id string) (*model.Project, error) {
-	panic(fmt.Errorf("not implemented"))
-}

@@ -5,11 +5,16 @@ package resolvers
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"gitlab.lrz.de/projecthub/gql-api/graph/generated"
 	"gitlab.lrz.de/projecthub/gql-api/graph/model"
 )
+
+func (r *chatResolver) ID(ctx context.Context, obj *model.Chat) (int, error) {
+	panic(fmt.Errorf("not implemented"))
+}
 
 func (r *chatResolver) WriteMessage(ctx context.Context, obj *model.Chat, content string) (*model.Message, error) {
 	// Write message here
@@ -20,31 +25,22 @@ func (r *chatResolver) WriteMessage(ctx context.Context, obj *model.Chat, conten
 	}, nil
 }
 
-func (r *mutationResolver) Chat(ctx context.Context, id string) (*model.Chat, error) {
+func (r *mutationResolver) Chat(ctx context.Context, id int) (*model.Chat, error) {
 	return &model.Chat{
 		ID: "1",
 		With: &model.User{
-			ID:       "1234",
+			ID:       1234,
 			Username: "peterschlonz42",
 		},
 	}, nil
 }
-
-// Chat returns generated.ChatResolver implementation.
-func (r *Resolver) Chat() generated.ChatResolver { return &chatResolver{r} }
-
-// Mutation returns generated.MutationResolver implementation.
-func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
-
-type chatResolver struct{ *Resolver }
-type mutationResolver struct{ *Resolver }
 
 func (r *queryResolver) Chats(ctx context.Context) ([]*model.Chat, error) {
 	return []*model.Chat{
 		{
 			ID: "1",
 			With: &model.User{
-				ID:       "1234",
+				ID:       1234,
 				Username: "peterschlonz42",
 			},
 			Messages: []*model.Message{
@@ -60,3 +56,12 @@ func (r *queryResolver) Chats(ctx context.Context) ([]*model.Chat, error) {
 				}},
 		}}, nil
 }
+
+// Chat returns generated.ChatResolver implementation.
+func (r *Resolver) Chat() generated.ChatResolver { return &chatResolver{r} }
+
+// Mutation returns generated.MutationResolver implementation.
+func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
+
+type chatResolver struct{ *Resolver }
+type mutationResolver struct{ *Resolver }
