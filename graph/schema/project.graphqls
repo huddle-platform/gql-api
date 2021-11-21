@@ -1,0 +1,54 @@
+type Project{
+    id: ID!
+    name: String!
+    description: String!
+    languages: [String!]!
+    location: Location!
+    participants: [User!]!
+    addParticipant(id: ID!): [User!]!
+    removeParticipant(id: ID!): [User!]!
+}
+
+type Location{
+    name: String!
+    coordinates: Coordinate
+}
+
+type Coordinate{
+    latitude: Float!
+    longitude: Float!
+}
+
+
+input SearchOptions{
+    filters:[String!]
+    cathegroy: String
+
+}
+
+extend type Query{
+    searchProjects(searchString: String!, options: SearchOptions!={}, start:Int!=0, count: Int!=20): [Project!]!
+    getProject(id: ID!): Project!
+    savedProjects: [Project!]!
+}
+
+input LocationInput{
+    name: String!
+    coordinates: CoordinateInput
+}
+input CoordinateInput{
+    latitude: Float!
+    longitude: Float!
+}
+
+input NewProjectInput{
+    name: String!
+    description: String!
+    languages: [String!]!
+    location: LocationInput
+}
+extend type Mutation{
+    createProject(project: NewProjectInput): Project!
+    # add Project to list of saved projects, return updated list
+    addSavedProject(id: ID!): [Project!]!
+}

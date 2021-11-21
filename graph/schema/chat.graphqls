@@ -1,0 +1,25 @@
+
+enum MessageAuthor{
+    ME
+    OTHER
+}
+type Message{
+    author: MessageAuthor!
+    content: String!
+    time: Time!
+}
+
+
+type Chat{
+    id: ID!
+    with: User!
+    messages(start: Int!=0,count:Int!=20): [Message!]!
+    writeMessage(content: String!): Message!
+}
+
+extend type Mutation{
+    chats: [Chat!]!
+    chat(id: ID!): Chat!
+}
+
+scalar Time

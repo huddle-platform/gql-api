@@ -1,5 +1,6 @@
 type LoginResponse{
     jwt: String
+    refreshToken: String
     error: String
 }
 
@@ -9,9 +10,11 @@ type EmailRequestResponse{
 }
 
 type Auth{
-    login(token: String!):LoginResponse
-    requestLoginEmail(email:String!):EmailRequestResponse
+    login(username: String!, password: String!):LoginResponse
+    requestNewPassword(email:String!):EmailRequestResponse
+    refreshToken(refreshToken: String!):LoginResponse
+    createAccount(email:String!, username: String!):User!
 }
-extend type Mutation{
+extend type Query{
     auth: Auth!
 }

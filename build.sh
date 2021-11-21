@@ -1,2 +1,3 @@
-docker build -t olepetersen/gql-api:0.1.6 .
-docker push olepetersen/gql-api:0.1.6
+tag="0.1.7"
+docker build -t olepetersen/gql-api:$tag .
+docker push olepetersen/gql-api:$tag

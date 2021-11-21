@@ -15,9 +15,13 @@ import (
 const port = "8080"
 
 func main() {
-	resolver,err:=resolvers.NewResolver(os.ExpandEnv(os.Getenv("DB_CONNECTION_STRING")))
-	if err!=nil{
-		log.Fatal(err)
+	resolver, err := resolvers.NewResolver(os.ExpandEnv(os.Getenv("DB_CONNECTION_STRING")))
+	if err != nil {
+		if os.Getenv("USE_DEMO_RESOLVER") == "true" {
+			resolver = resolvers.NewDemoResolver()
+		} else {
+			log.Fatal(err)
+		}
 	}
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
 

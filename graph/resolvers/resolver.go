@@ -23,3 +23,7 @@ func NewResolver(connstring string) (*Resolver, error) {
 		pool: db,
 	}, nil
 }
+
+func NewDemoResolver() *Resolver {
+	return &Resolver{}
+}
