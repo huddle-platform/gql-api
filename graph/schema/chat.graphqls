@@ -18,8 +18,10 @@ type Chat{
 }
 
 extend type Mutation{
-    chats: [Chat!]!
     chat(id: ID!): Chat!
+}
+extend type Query{
+    chats: [Chat!]!
 }
 
 scalar Time

@@ -20,7 +20,26 @@ func (r *chatResolver) WriteMessage(ctx context.Context, obj *model.Chat, conten
 	}, nil
 }
 
-func (r *mutationResolver) Chats(ctx context.Context) ([]*model.Chat, error) {
+func (r *mutationResolver) Chat(ctx context.Context, id string) (*model.Chat, error) {
+	return &model.Chat{
+		ID: "1",
+		With: &model.User{
+			ID:       "1234",
+			Username: "peterschlonz42",
+		},
+	}, nil
+}
+
+// Chat returns generated.ChatResolver implementation.
+func (r *Resolver) Chat() generated.ChatResolver { return &chatResolver{r} }
+
+// Mutation returns generated.MutationResolver implementation.
+func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
+
+type chatResolver struct{ *Resolver }
+type mutationResolver struct{ *Resolver }
+
+func (r *queryResolver) Chats(ctx context.Context) ([]*model.Chat, error) {
 	return []*model.Chat{
 		{
 			ID: "1",
@@ -41,22 +60,3 @@ func (r *mutationResolver) Chats(ctx context.Context) ([]*model.Chat, error) {
 				}},
 		}}, nil
 }
-
-func (r *mutationResolver) Chat(ctx context.Context, id string) (*model.Chat, error) {
-	return &model.Chat{
-		ID: "1",
-		With: &model.User{
-			ID:       "1234",
-			Username: "peterschlonz42",
-		},
-	}, nil
-}
-
-// Chat returns generated.ChatResolver implementation.
-func (r *Resolver) Chat() generated.ChatResolver { return &chatResolver{r} }
-
-// Mutation returns generated.MutationResolver implementation.
-func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
-
-type chatResolver struct{ *Resolver }
-type mutationResolver struct{ *Resolver }
