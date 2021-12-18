@@ -10,6 +10,7 @@ require (
 	github.com/lib/pq v1.10.4
 	github.com/matryer/moq v0.2.4 // indirect
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
+	github.com/ory/kratos-client-go v0.8.2-alpha.1
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rs/cors v1.8.0
 	github.com/stretchr/testify v1.7.0 // indirect

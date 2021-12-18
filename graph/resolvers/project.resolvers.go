@@ -5,8 +5,8 @@ package resolvers
 
 import (
 	"context"
+	dbsql "database/sql"
 	"fmt"
-	dbsql"database/sql"
 
 	"gitlab.lrz.de/projecthub/gql-api/graph/generated"
 	"gitlab.lrz.de/projecthub/gql-api/graph/model"
@@ -18,11 +18,11 @@ func (r *mutationResolver) CreateProject(ctx context.Context, project *model.New
 	if err != nil {
 		return nil, err
 	}
-	roleId, err := r.queries.AddRole(ctx, sql.AddRoleParams{Type: "project-admin",ProjectID: dbsql.NullInt32{Int32:projectID}})
+	roleId, err := r.queries.AddRole(ctx, sql.AddRoleParams{Type: "project-admin", ProjectID: dbsql.NullInt32{Int32: projectID}})
 	if err != nil {
 		return nil, err
 	}
-	err=r.queries.GrantRoleToUser(ctx,sql.GrantRoleToUserParams{UserID: 1,RoleID: roleId})
+	err = r.queries.GrantRoleToUser(ctx, sql.GrantRoleToUserParams{UserID: 1, RoleID: roleId})
 	if err != nil {
 		return nil, err
 	}
@@ -45,8 +45,7 @@ func (r *projectResolver) Participants(ctx context.Context, obj *model.Project) 
 	participants := make([]*model.User, len(obj.ParticipantIDs))
 	for i, id := range obj.ParticipantIDs {
 		participants[i] = &model.User{
-			ID:       id,
-			Username: "user-" + string(id),
+			ID: id,
 		}
 	}
 	return participants, nil
@@ -70,7 +69,7 @@ func (r *queryResolver) SearchProjects(ctx context.Context, searchString string,
 			Description:    "Description of project" + string(i),
 			Languages:      []string{"DE"},
 			Location:       &model.Location{Name: "Location" + string(i)},
-			ParticipantIDs: []int{1234, 5345},
+			ParticipantIDs: []string{"1234", "5345"},
 		}
 	}
 
@@ -84,7 +83,7 @@ func (r *queryResolver) GetProject(ctx context.Context, id int) (*model.Project,
 		Description:    "Description of project" + string(id),
 		Languages:      []string{"DE"},
 		Location:       &model.Location{Name: "Location" + string(id)},
-		ParticipantIDs: []int{1234, 5345}}, nil
+		ParticipantIDs: []string{"1234", "5345"}}, nil
 }
 
 func (r *queryResolver) SavedProjects(ctx context.Context) ([]*model.Project, error) {
@@ -97,7 +96,7 @@ func (r *queryResolver) SavedProjects(ctx context.Context) ([]*model.Project, er
 			Description:    "Description of project" + string(i),
 			Languages:      []string{"DE"},
 			Location:       &model.Location{Name: "Location" + string(i)},
-			ParticipantIDs: []int{1234, 5345}}
+			ParticipantIDs: []string{"1234", "5345"}}
 	}
 	return results, nil
 }

@@ -7,17 +7,22 @@ import (
 	"context"
 	"fmt"
 
+	"gitlab.lrz.de/projecthub/gql-api/auth"
 	"gitlab.lrz.de/projecthub/gql-api/graph/generated"
 	"gitlab.lrz.de/projecthub/gql-api/graph/model"
 )
 
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
-	email := "peter.schlonz@gmail.com"
-	return &model.User{
-		ID:       1,
-		Username: "Testuser",
-		Email:    &email,
-	}, nil
+	me, exists := auth.IdentityFromContext(ctx)
+	if exists {
+		traitMap := me.Traits.(map[string]interface{})
+		email := traitMap["email"].(string)
+		return &model.User{
+			ID:    me.Id,
+			Email: &email,
+		}, nil
+	}
+	return nil, fmt.Errorf("not logged in")
 }
 
 func (r *userResolver) Projects(ctx context.Context, obj *model.User) ([]*model.Project, error) {
@@ -30,7 +35,7 @@ func (r *userResolver) Projects(ctx context.Context, obj *model.User) ([]*model.
 			Description:    "Description of project" + string(i),
 			Languages:      []string{"DE"},
 			Location:       &model.Location{Name: "Location" + string(i)},
-			ParticipantIDs: []int{1234, 5345},
+			ParticipantIDs: []string{"1234", "5345"},
 		}
 	}
 
@@ -41,13 +46,3 @@ func (r *userResolver) Projects(ctx context.Context, obj *model.User) ([]*model.
 func (r *Resolver) User() generated.UserResolver { return &userResolver{r} }
 
 type userResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-func (r *userResolver) ID(ctx context.Context, obj *model.User) (int, error) {
-	panic(fmt.Errorf("not implemented"))
-}

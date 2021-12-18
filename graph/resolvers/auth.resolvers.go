@@ -56,7 +56,7 @@ func (r *authResolver) CreateAccount(ctx context.Context, obj *model.Auth, email
 	}
 	return &model.User{
 		Email:    &email,
-		Username: username,
+		Username: &username,
 	}, nil
 }
 

@@ -3,3 +3,4 @@ graph/model/models_gen.go
 .vscode/launch.json
 sql
 schema.sql
+gql-api

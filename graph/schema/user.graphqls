@@ -1,10 +1,11 @@
+directive @isLoggedIn on FIELD_DEFINITION
 type User {
   id: ID!
-  username: String!
+  username: String
   email: String
   projects: [Project!]
 }
 
 extend type Query {
-  me: User!
+  me: User! @isLoggedIn
 }

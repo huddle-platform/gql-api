@@ -5,16 +5,11 @@ package resolvers
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"gitlab.lrz.de/projecthub/gql-api/graph/generated"
 	"gitlab.lrz.de/projecthub/gql-api/graph/model"
 )
-
-func (r *chatResolver) ID(ctx context.Context, obj *model.Chat) (int, error) {
-	panic(fmt.Errorf("not implemented"))
-}
 
 func (r *chatResolver) WriteMessage(ctx context.Context, obj *model.Chat, content string) (*model.Message, error) {
 	// Write message here
@@ -27,10 +22,9 @@ func (r *chatResolver) WriteMessage(ctx context.Context, obj *model.Chat, conten
 
 func (r *mutationResolver) Chat(ctx context.Context, id int) (*model.Chat, error) {
 	return &model.Chat{
-		ID: "1",
+		ID: 1,
 		With: &model.User{
-			ID:       1234,
-			Username: "peterschlonz42",
+			ID: "1234",
 		},
 	}, nil
 }
@@ -38,10 +32,9 @@ func (r *mutationResolver) Chat(ctx context.Context, id int) (*model.Chat, error
 func (r *queryResolver) Chats(ctx context.Context) ([]*model.Chat, error) {
 	return []*model.Chat{
 		{
-			ID: "1",
+			ID: 1,
 			With: &model.User{
-				ID:       1234,
-				Username: "peterschlonz42",
+				ID: "1234",
 			},
 			Messages: []*model.Message{
 				{
