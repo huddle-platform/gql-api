@@ -27,7 +27,7 @@ input SearchOptions{
 }
 
 extend type Query{
-    searchProjects(searchString: String!, options: SearchOptions!={}, start:Int!=0, count: Int!=20): [Project!]!
+    searchProjects(searchString: String!, options: SearchOptions!={}, offset:Int!=0, countLimit: Int!=20): [Project!]!
     getProject(id: ID!): Project!
     savedProjects: [Project!]!
 }

@@ -5,9 +5,9 @@ package resolvers
 
 import (
 	"context"
-	dbsql "database/sql"
 	"fmt"
 
+	"github.com/google/uuid"
 	"gitlab.lrz.de/projecthub/gql-api/graph/generated"
 	"gitlab.lrz.de/projecthub/gql-api/graph/model"
 	"gitlab.lrz.de/projecthub/gql-api/sql"
@@ -18,26 +18,18 @@ func (r *mutationResolver) CreateProject(ctx context.Context, project *model.New
 	if err != nil {
 		return nil, err
 	}
-	roleId, err := r.queries.AddRole(ctx, sql.AddRoleParams{Type: "project-admin", ProjectID: dbsql.NullInt32{Int32: projectID}})
-	if err != nil {
-		return nil, err
-	}
-	err = r.queries.GrantRoleToUser(ctx, sql.GrantRoleToUserParams{UserID: 1, RoleID: roleId})
-	if err != nil {
-		return nil, err
-	}
 	fetchedProject, err := r.queries.GetProjectByID(ctx, projectID)
 	if err != nil {
 		return nil, err
 	}
 	return &model.Project{
-		ID:          int(fetchedProject.ID),
+		ID:          fetchedProject.ID.String(),
 		Name:        fetchedProject.Name,
 		Description: fetchedProject.Description,
 	}, nil
 }
 
-func (r *mutationResolver) AddSavedProject(ctx context.Context, id int) ([]*model.Project, error) {
+func (r *mutationResolver) AddSavedProject(ctx context.Context, id string) ([]*model.Project, error) {
 	return []*model.Project{}, nil
 }
 
@@ -51,39 +43,45 @@ func (r *projectResolver) Participants(ctx context.Context, obj *model.Project) 
 	return participants, nil
 }
 
-func (r *projectResolver) AddParticipant(ctx context.Context, obj *model.Project, id int) ([]*model.User, error) {
+func (r *projectResolver) AddParticipant(ctx context.Context, obj *model.Project, id string) ([]*model.User, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *projectResolver) RemoveParticipant(ctx context.Context, obj *model.Project, id int) ([]*model.User, error) {
+func (r *projectResolver) RemoveParticipant(ctx context.Context, obj *model.Project, id string) ([]*model.User, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) SearchProjects(ctx context.Context, searchString string, options model.SearchOptions, start int, count int) ([]*model.Project, error) {
-	results := make([]*model.Project, count)
-
-	for i := 0; i < count; i++ {
-		results[i] = &model.Project{
-			ID:             (i),
-			Name:           "Project number" + string(i),
-			Description:    "Description of project" + string(i),
-			Languages:      []string{"DE"},
-			Location:       &model.Location{Name: "Location" + string(i)},
-			ParticipantIDs: []string{"1234", "5345"},
-		}
+func (r *queryResolver) SearchProjects(ctx context.Context, searchString string, options model.SearchOptions, offset int, countLimit int) ([]*model.Project, error) {
+	dbResults, err := r.queries.GetProjects(context.Background())
+	if err != nil {
+		return nil, err
 	}
+	results := []*model.Project{}
 
+	for i := 0; i < countLimit && i+offset < len(dbResults); i++ {
+		dbProject := dbResults[i+offset]
+		results = append(results, &model.Project{
+			ID:             dbProject.ID.String(),
+			Name:           dbProject.Name,
+			Description:    dbProject.Description,
+			Languages:      []string{"DE"},
+			ParticipantIDs: []string{dbProject.Creator.String()},
+		})
+	}
 	return results, nil
 }
 
-func (r *queryResolver) GetProject(ctx context.Context, id int) (*model.Project, error) {
+func (r *queryResolver) GetProject(ctx context.Context, id string) (*model.Project, error) {
+	dbProject, err := r.queries.GetProjectByID(context.Background(), uuid.MustParse(id))
+	if err != nil {
+		return nil, err
+	}
 	return &model.Project{
-		ID:             (id),
-		Name:           "Project number" + string(id),
-		Description:    "Description of project" + string(id),
-		Languages:      []string{"DE"},
-		Location:       &model.Location{Name: "Location" + string(id)},
-		ParticipantIDs: []string{"1234", "5345"}}, nil
+		ID:             dbProject.ID.String(),
+		Name:           dbProject.Name,
+		Description:    dbProject.Description,
+		ParticipantIDs: []string{dbProject.Creator.String()},
+	}, nil
 }
 
 func (r *queryResolver) SavedProjects(ctx context.Context) ([]*model.Project, error) {
@@ -91,7 +89,7 @@ func (r *queryResolver) SavedProjects(ctx context.Context) ([]*model.Project, er
 
 	for i := 0; i < 10; i++ {
 		results[i] = &model.Project{
-			ID:             (i),
+			ID:             "ndpifp",
 			Name:           "Project number" + string(i),
 			Description:    "Description of project" + string(i),
 			Languages:      []string{"DE"},

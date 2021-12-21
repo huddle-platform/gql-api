@@ -20,9 +20,9 @@ func (r *chatResolver) WriteMessage(ctx context.Context, obj *model.Chat, conten
 	}, nil
 }
 
-func (r *mutationResolver) Chat(ctx context.Context, id int) (*model.Chat, error) {
+func (r *mutationResolver) Chat(ctx context.Context, id string) (*model.Chat, error) {
 	return &model.Chat{
-		ID: 1,
+		ID: "adifnpaiduf",
 		With: &model.User{
 			ID: "1234",
 		},
@@ -32,7 +32,7 @@ func (r *mutationResolver) Chat(ctx context.Context, id int) (*model.Chat, error
 func (r *queryResolver) Chats(ctx context.Context) ([]*model.Chat, error) {
 	return []*model.Chat{
 		{
-			ID: 1,
+			ID: "apdifn",
 			With: &model.User{
 				ID: "1234",
 			},
