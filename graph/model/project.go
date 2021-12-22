@@ -6,5 +6,4 @@ type Project struct {
 	Description    string    `json:"description"`
 	Languages      []string  `json:"languages"`
 	Location       *Location `json:"location"`
-	ParticipantIDs []string
 }

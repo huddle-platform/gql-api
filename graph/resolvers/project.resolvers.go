@@ -33,11 +33,21 @@ func (r *mutationResolver) AddSavedProject(ctx context.Context, id string) ([]*m
 	return []*model.Project{}, nil
 }
 
+func (r *mutationResolver) RemoveSavedProject(ctx context.Context, id string) (*bool, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 func (r *projectResolver) Participants(ctx context.Context, obj *model.Project) ([]*model.User, error) {
-	participants := make([]*model.User, len(obj.ParticipantIDs))
-	for i, id := range obj.ParticipantIDs {
+	dbParticipants, err := r.queries.GetParticipantsOfProject(context.Background(), uuid.MustParse(obj.ID))
+	if err != nil {
+		return nil, err
+	}
+	participants := make([]*model.User, len(dbParticipants))
+	for i, p := range dbParticipants {
 		participants[i] = &model.User{
-			ID: id,
+			ID:       p.ID.String(),
+			Username: &p.Username,
+			Email:    &p.Email,
 		}
 	}
 	return participants, nil
@@ -61,11 +71,10 @@ func (r *queryResolver) SearchProjects(ctx context.Context, searchString string,
 	for i := 0; i < countLimit && i+offset < len(dbResults); i++ {
 		dbProject := dbResults[i+offset]
 		results = append(results, &model.Project{
-			ID:             dbProject.ID.String(),
-			Name:           dbProject.Name,
-			Description:    dbProject.Description,
-			Languages:      []string{"DE"},
-			ParticipantIDs: []string{dbProject.Creator.String()},
+			ID:          dbProject.ID.String(),
+			Name:        dbProject.Name,
+			Description: dbProject.Description,
+			Languages:   []string{"DE"},
 		})
 	}
 	return results, nil
@@ -77,10 +86,9 @@ func (r *queryResolver) GetProject(ctx context.Context, id string) (*model.Proje
 		return nil, err
 	}
 	return &model.Project{
-		ID:             dbProject.ID.String(),
-		Name:           dbProject.Name,
-		Description:    dbProject.Description,
-		ParticipantIDs: []string{dbProject.Creator.String()},
+		ID:          dbProject.ID.String(),
+		Name:        dbProject.Name,
+		Description: dbProject.Description,
 	}, nil
 }
 
@@ -89,12 +97,12 @@ func (r *queryResolver) SavedProjects(ctx context.Context) ([]*model.Project, er
 
 	for i := 0; i < 10; i++ {
 		results[i] = &model.Project{
-			ID:             "ndpifp",
-			Name:           "Project number" + string(i),
-			Description:    "Description of project" + string(i),
-			Languages:      []string{"DE"},
-			Location:       &model.Location{Name: "Location" + string(i)},
-			ParticipantIDs: []string{"1234", "5345"}}
+			ID:          "ndpifp",
+			Name:        "Project number" + string(i),
+			Description: "Description of project" + string(i),
+			Languages:   []string{"DE"},
+			Location:    &model.Location{Name: "Location" + string(i)},
+		}
 	}
 	return results, nil
 }

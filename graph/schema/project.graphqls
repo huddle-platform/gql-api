@@ -23,7 +23,6 @@ type Coordinate{
 input SearchOptions{
     filters:[String!]
     cathegroy: String
-
 }
 
 extend type Query{
@@ -51,4 +50,5 @@ extend type Mutation{
     createProject(project: NewProjectInput): Project!
     # add Project to list of saved projects, return updated list
     addSavedProject(id: ID!): [Project!]!
+    removeSavedProject(id: ID!):Boolean
 }

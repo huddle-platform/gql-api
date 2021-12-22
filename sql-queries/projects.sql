@@ -11,3 +11,16 @@ SELECT * FROM projects WHERE id=$1;
 SELECT *
 FROM projects
 WHERE creator=$1;
+
+-- name: GetParticipantsOfProject :many
+SELECT DISTINCT users.*
+FROM users INNER JOIN participations
+ON users.id = participation.user_id
+WHERE participations.project_id = $1;
+
+-- name: AddParticipantToProject :exec
+INSERT INTO participations (user_id,project_id) VALUES($1,$2);
+
+
+-- name: RemoveParticipantFromProject :exec
+DELETE FROM participations WHERE user_id = $1 AND project_id = $2;
