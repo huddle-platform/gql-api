@@ -8,13 +8,18 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"gitlab.lrz.de/projecthub/gql-api/auth"
 	"gitlab.lrz.de/projecthub/gql-api/graph/generated"
 	"gitlab.lrz.de/projecthub/gql-api/graph/model"
 	"gitlab.lrz.de/projecthub/gql-api/sql"
 )
 
 func (r *mutationResolver) CreateProject(ctx context.Context, project *model.NewProjectInput) (*model.Project, error) {
-	projectID, err := r.queries.CreateProject(ctx, sql.CreateProjectParams{Name: project.Name, Description: project.Description})
+	user, err := auth.IdentityFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	projectID, err := r.queries.CreateProject(ctx, sql.CreateProjectParams{Name: project.Name, Description: project.Description, Creator: uuid.MustParse(user.Id)})
 	if err != nil {
 		return nil, err
 	}
@@ -29,12 +34,28 @@ func (r *mutationResolver) CreateProject(ctx context.Context, project *model.New
 	}, nil
 }
 
-func (r *mutationResolver) AddSavedProject(ctx context.Context, id string) ([]*model.Project, error) {
-	return []*model.Project{}, nil
+func (r *mutationResolver) AddSavedProject(ctx context.Context, id string) (bool, error) {
+	user, err := auth.IdentityFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+	err = r.queries.SaveProjectForUser(context.Background(), sql.SaveProjectForUserParams{UserID: uuid.MustParse(user.Id), ProjectID: uuid.MustParse(id)})
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
-func (r *mutationResolver) RemoveSavedProject(ctx context.Context, id string) (*bool, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) RemoveSavedProject(ctx context.Context, id string) (bool, error) {
+	user, err := auth.IdentityFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+	err = r.queries.UnsaveProjectForUser(context.Background(), sql.UnsaveProjectForUserParams{UserID: uuid.MustParse(user.Id), ProjectID: uuid.MustParse(id)})
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func (r *projectResolver) Participants(ctx context.Context, obj *model.Project) ([]*model.User, error) {
@@ -53,12 +74,39 @@ func (r *projectResolver) Participants(ctx context.Context, obj *model.Project) 
 	return participants, nil
 }
 
-func (r *projectResolver) AddParticipant(ctx context.Context, obj *model.Project, id string) ([]*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *projectResolver) Creator(ctx context.Context, obj *model.Project) (*model.User, error) {
+	dbUser, err := r.queries.GetUserByID(context.Background(), uuid.MustParse(obj.CreatorID))
+	if err != nil {
+		return nil, err
+	}
+	return &model.User{
+		ID:       dbUser.ID.String(),
+		Username: &dbUser.Username,
+		Email:    &dbUser.Email,
+	}, nil
 }
 
-func (r *projectResolver) RemoveParticipant(ctx context.Context, obj *model.Project, id string) ([]*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *projectResolver) AddParticipant(ctx context.Context, obj *model.Project, id string) (bool, error) {
+	user, err := auth.IdentityFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+	if user.Id != obj.CreatorID {
+		return false, fmt.Errorf("only the creator can add participants")
+	}
+	err = r.queries.AddParticipantToProject(context.Background(), sql.AddParticipantToProjectParams{ProjectID: uuid.MustParse(obj.ID), UserID: uuid.MustParse(id)})
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (r *projectResolver) RemoveParticipant(ctx context.Context, obj *model.Project, id string) (bool, error) {
+	err := r.queries.RemoveParticipantFromProject(context.Background(), sql.RemoveParticipantFromProjectParams{ProjectID: uuid.MustParse(obj.ID), UserID: uuid.MustParse(id)})
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func (r *queryResolver) SearchProjects(ctx context.Context, searchString string, options model.SearchOptions, offset int, countLimit int) ([]*model.Project, error) {
@@ -93,15 +141,21 @@ func (r *queryResolver) GetProject(ctx context.Context, id string) (*model.Proje
 }
 
 func (r *queryResolver) SavedProjects(ctx context.Context) ([]*model.Project, error) {
-	results := make([]*model.Project, 10)
-
-	for i := 0; i < 10; i++ {
+	user, err := auth.IdentityFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	dbResults, err := r.queries.GetSavedProjectsForUser(context.Background(), uuid.MustParse(user.Id))
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*model.Project, len(dbResults))
+	for i, p := range dbResults {
 		results[i] = &model.Project{
-			ID:          "ndpifp",
-			Name:        "Project number" + string(i),
-			Description: "Description of project" + string(i),
+			ID:          p.ID.String(),
+			Name:        p.Name,
+			Description: p.Description,
 			Languages:   []string{"DE"},
-			Location:    &model.Location{Name: "Location" + string(i)},
 		}
 	}
 	return results, nil

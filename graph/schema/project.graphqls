@@ -5,8 +5,9 @@ type Project{
     languages: [String!]!
     location: Location!
     participants: [User!]!
-    addParticipant(id: ID!): [User!]!
-    removeParticipant(id: ID!): [User!]!
+    creator: User!
+    addParticipant(id: ID!): Boolean!
+    removeParticipant(id: ID!): Boolean!
 }
 
 type Location{
@@ -27,8 +28,8 @@ input SearchOptions{
 
 extend type Query{
     searchProjects(searchString: String!, options: SearchOptions!={}, offset:Int!=0, countLimit: Int!=20): [Project!]!
-    getProject(id: ID!): Project!
-    savedProjects: [Project!]!
+    getProject(id: ID!): Project
+    savedProjects: [Project!]
 }
 
 input LocationInput{
@@ -49,6 +50,6 @@ input NewProjectInput{
 extend type Mutation{
     createProject(project: NewProjectInput): Project!
     # add Project to list of saved projects, return updated list
-    addSavedProject(id: ID!): [Project!]!
-    removeSavedProject(id: ID!):Boolean
+    addSavedProject(id: ID!): Boolean!
+    removeSavedProject(id: ID!):Boolean!
 }

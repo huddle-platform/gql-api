@@ -10,11 +10,11 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	kc "github.com/ory/kratos-client-go"
 	"github.com/rs/cors"
 	"gitlab.lrz.de/projecthub/gql-api/auth"
 	"gitlab.lrz.de/projecthub/gql-api/graph/generated"
 	"gitlab.lrz.de/projecthub/gql-api/graph/resolvers"
-	kc "github.com/ory/kratos-client-go"
 )
 
 const port = "8080"
@@ -34,8 +34,7 @@ func main() {
 	}
 	config := generated.Config{Resolvers: resolver}
 	config.Directives.IsLoggedIn = func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error) {
-		_, isLoggedIn := auth.IdentityFromContext(ctx)
-		if isLoggedIn {
+		if _, loginErr := auth.IdentityFromContext(ctx); loginErr == nil {
 			return next(ctx)
 		} else {
 			return nil, fmt.Errorf("authenticate please")

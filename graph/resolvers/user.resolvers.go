@@ -15,8 +15,8 @@ import (
 )
 
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
-	me, exists := auth.IdentityFromContext(ctx)
-	if exists {
+	me, err := auth.IdentityFromContext(ctx)
+	if err == nil {
 		email, _ := me.GetTrait("email")
 		user, err := r.queries.GetUserByID(context.Background(), uuid.MustParse(me.Id))
 		if err != nil {
@@ -37,7 +37,7 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 			Username: &user.Username,
 		}, nil
 	}
-	return nil, fmt.Errorf("not logged in")
+	return nil, err
 }
 
 func (r *userResolver) MemberOf(ctx context.Context, obj *model.User) ([]*model.Project, error) {
