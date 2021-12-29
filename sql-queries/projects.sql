@@ -15,7 +15,7 @@ WHERE creator=$1;
 -- name: GetParticipantsOfProject :many
 SELECT DISTINCT users.*
 FROM users INNER JOIN participations
-ON users.id = participation.user_id
+ON users.id = participations.user_id
 WHERE participations.project_id = $1;
 
 -- name: AddParticipantToProject :exec

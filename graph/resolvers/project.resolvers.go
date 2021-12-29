@@ -31,6 +31,7 @@ func (r *mutationResolver) CreateProject(ctx context.Context, project *model.New
 		ID:          fetchedProject.ID.String(),
 		Name:        fetchedProject.Name,
 		Description: fetchedProject.Description,
+		CreatorID:   fetchedProject.Creator.String(),
 	}, nil
 }
 
@@ -122,7 +123,7 @@ func (r *queryResolver) SearchProjects(ctx context.Context, searchString string,
 			ID:          dbProject.ID.String(),
 			Name:        dbProject.Name,
 			Description: dbProject.Description,
-			Languages:   []string{"DE"},
+			CreatorID:   dbProject.Creator.String(),
 		})
 	}
 	return results, nil
@@ -137,6 +138,7 @@ func (r *queryResolver) GetProject(ctx context.Context, id string) (*model.Proje
 		ID:          dbProject.ID.String(),
 		Name:        dbProject.Name,
 		Description: dbProject.Description,
+		CreatorID:   dbProject.Creator.String(),
 	}, nil
 }
 
@@ -155,7 +157,7 @@ func (r *queryResolver) SavedProjects(ctx context.Context) ([]*model.Project, er
 			ID:          p.ID.String(),
 			Name:        p.Name,
 			Description: p.Description,
-			Languages:   []string{"DE"},
+			CreatorID:   p.Creator.String(),
 		}
 	}
 	return results, nil

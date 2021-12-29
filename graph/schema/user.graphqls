@@ -3,7 +3,8 @@ type User {
   id: ID!
   username: String
   email: String
-  memberOf: [Project!]
+  participations: [Project!]
+  createdProjects: [Project!]
 }
 
 extend type Query {
