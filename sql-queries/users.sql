@@ -22,3 +22,9 @@ INSERT INTO project_saves (user_id,project_id) VALUES ($1,$2);
 
 -- name: UnsaveProjectForUser :exec
 DELETE FROM project_saves WHERE user_id = $1 AND project_id = $2;
+
+-- name: SetUserName :exec
+UPDATE users SET username = $1 WHERE id = $2;
+
+-- name: GetUserByUsername :one
+SELECT * FROM users WHERE username=$1;

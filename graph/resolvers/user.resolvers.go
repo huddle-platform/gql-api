@@ -13,6 +13,18 @@ import (
 	"gitlab.lrz.de/projecthub/gql-api/sql"
 )
 
+func (r *mutationResolver) SetMyUsername(ctx context.Context, username string) (bool, error) {
+	me, err := auth.IdentityFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+	err = r.queries.SetUserName(context.Background(), sql.SetUserNameParams{Username: username, ID: uuid.MustParse(me.Id)})
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	me, err := auth.IdentityFromContext(ctx)
 	if err == nil {
@@ -37,6 +49,17 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 		}, nil
 	}
 	return nil, err
+}
+
+func (r *queryResolver) GetUserByUsername(ctx context.Context, username string) (*model.User, error) {
+	user, err := r.queries.GetUserByUsername(ctx, username)
+	if err != nil {
+		return nil, err
+	}
+	return &model.User{
+		ID:       user.ID.String(),
+		Username: &user.Username,
+	}, nil
 }
 
 func (r *userResolver) Participations(ctx context.Context, obj *model.User) ([]*model.Project, error) {

@@ -11,17 +11,16 @@ type Message{
 
 
 type Chat{
-    id: ID!
-    with: User!
+    me: User!
+    other: User!
     messages(start: Int!=0,count:Int!=20): [Message!]!
     writeMessage(content: String!): Message!
 }
 
 extend type Mutation{
-    chat(id: ID!): Chat!
-}
-extend type Query{
-    chats: [Chat!]!
+    chat(with: ID!): Chat!
+    chats: [Chat!]
+    newChat(withUsername:String!): Chat
 }
 
 scalar Time

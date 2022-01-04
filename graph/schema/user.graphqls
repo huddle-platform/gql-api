@@ -9,4 +9,8 @@ type User {
 
 extend type Query {
   me: User! @isLoggedIn
+  getUserByUsername(username: String!): User
+}
+extend type Mutation{
+  setMyUsername(username: String!): Boolean!
 }
