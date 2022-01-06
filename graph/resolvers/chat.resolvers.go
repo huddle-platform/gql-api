@@ -107,7 +107,7 @@ func (r *mutationResolver) Chats(ctx context.Context) ([]*model.Chat, error) {
 	return res, nil
 }
 
-func (r *mutationResolver) NewChat(ctx context.Context, withUsername string) (*model.Chat, error) {
+func (r *mutationResolver) GetChatByUsername(ctx context.Context, withUsername string) (*model.Chat, error) {
 	me, err := auth.IdentityFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -122,6 +122,17 @@ func (r *mutationResolver) NewChat(ctx context.Context, withUsername string) (*m
 	}, nil
 }
 
+func (r *mutationResolver) GetChatByID(ctx context.Context, withUserID string) (*model.Chat, error) {
+	me, err := auth.IdentityFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.Chat{
+		Me_id:    me.Id,
+		Other_id: withUserID,
+	}, nil
+}
+
 // Chat returns generated.ChatResolver implementation.
 func (r *Resolver) Chat() generated.ChatResolver { return &chatResolver{r} }
 
@@ -130,3 +141,24 @@ func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResol
 
 type chatResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *mutationResolver) NewChat(ctx context.Context, withUsername string) (*model.Chat, error) {
+	me, err := auth.IdentityFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	otherID, err := r.UserIdFromusername(context.Background(), withUsername)
+	if err != nil {
+		return nil, err
+	}
+	return &model.Chat{
+		Me_id:    me.Id,
+		Other_id: otherID,
+	}, nil
+}

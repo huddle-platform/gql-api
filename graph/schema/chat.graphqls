@@ -20,7 +20,8 @@ type Chat{
 extend type Mutation{
     chat(with: ID!): Chat!
     chats: [Chat!]
-    newChat(withUsername:String!): Chat
+    getChatByUsername(withUsername:String!): Chat
+    getChatById(withUserId:String!): Chat
 }
 
 scalar Time
