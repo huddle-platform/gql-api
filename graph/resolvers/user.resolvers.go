@@ -5,6 +5,7 @@ package resolvers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"gitlab.lrz.de/projecthub/gql-api/auth"
@@ -18,6 +19,11 @@ func (r *mutationResolver) SetMyUsername(ctx context.Context, username string) (
 	if err != nil {
 		return false, err
 	}
+	existingUser, err := r.queries.GetUserByUsername(context.Background(), username)
+	if err == nil && existingUser.ID.String() != me.Id {
+		return false, fmt.Errorf("username %s already taken", username)
+	}
+
 	err = r.queries.SetUserName(context.Background(), sql.SetUserNameParams{Username: username, ID: uuid.MustParse(me.Id)})
 	if err != nil {
 		return false, err
