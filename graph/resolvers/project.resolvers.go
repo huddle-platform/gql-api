@@ -166,8 +166,4 @@ func (r *queryResolver) SavedProjects(ctx context.Context) ([]*model.Project, er
 // Project returns generated.ProjectResolver implementation.
 func (r *Resolver) Project() generated.ProjectResolver { return &projectResolver{r} }
 
-// Query returns generated.QueryResolver implementation.
-func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
-
 type projectResolver struct{ *Resolver }
-type queryResolver struct{ *Resolver }

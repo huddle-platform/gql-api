@@ -6,7 +6,6 @@ package resolvers
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 	"gitlab.lrz.de/projecthub/gql-api/auth"
@@ -54,30 +53,20 @@ func (r *chatResolver) Messages(ctx context.Context, obj *model.Chat, start int,
 	return res, nil
 }
 
-func (r *chatResolver) WriteMessage(ctx context.Context, obj *model.Chat, content string) (*model.Message, error) {
+func (r *mutationResolver) WriteMessageToUser(ctx context.Context, userID string, content string) (bool, error) {
 	me, err := auth.IdentityFromContext(ctx)
 	if err != nil {
-		return nil, err
-	}
-	if obj.Me_id != me.Id {
-		return nil, fmt.Errorf("you are not allowed to write messages for other users")
+		return false, err
 	}
 	err = r.queries.WriteMessage(context.Background(), sql.WriteMessageParams{
-		SenderID:   uuid.MustParse(obj.Me_id),
-		ReceiverID: uuid.MustParse(obj.Other_id),
+		SenderID:   uuid.MustParse(me.Id),
+		ReceiverID: uuid.MustParse(userID),
 		Content:    content,
 	})
-	if err != nil {
-		return nil, err
-	}
-	return &model.Message{
-		Content: content,
-		Author:  model.MessageAuthorMe,
-		Time:    time.Now(),
-	}, nil
+	return err == nil, nil
 }
 
-func (r *mutationResolver) Chat(ctx context.Context, with string) (*model.Chat, error) {
+func (r *queryResolver) Chat(ctx context.Context, with string) (*model.Chat, error) {
 	me, err := auth.IdentityFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -88,7 +77,7 @@ func (r *mutationResolver) Chat(ctx context.Context, with string) (*model.Chat, 
 	}, nil
 }
 
-func (r *mutationResolver) Chats(ctx context.Context) ([]*model.Chat, error) {
+func (r *queryResolver) Chats(ctx context.Context) ([]*model.Chat, error) {
 	me, err := auth.IdentityFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -107,7 +96,7 @@ func (r *mutationResolver) Chats(ctx context.Context) ([]*model.Chat, error) {
 	return res, nil
 }
 
-func (r *mutationResolver) GetChatByUsername(ctx context.Context, withUsername string) (*model.Chat, error) {
+func (r *queryResolver) GetChatByUsername(ctx context.Context, withUsername string) (*model.Chat, error) {
 	me, err := auth.IdentityFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -122,7 +111,7 @@ func (r *mutationResolver) GetChatByUsername(ctx context.Context, withUsername s
 	}, nil
 }
 
-func (r *mutationResolver) GetChatByID(ctx context.Context, withUserID string) (*model.Chat, error) {
+func (r *queryResolver) GetChatByID(ctx context.Context, withUserID string) (*model.Chat, error) {
 	me, err := auth.IdentityFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -139,5 +128,9 @@ func (r *Resolver) Chat() generated.ChatResolver { return &chatResolver{r} }
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
+// Query returns generated.QueryResolver implementation.
+func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
+
 type chatResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
+type queryResolver struct{ *Resolver }
