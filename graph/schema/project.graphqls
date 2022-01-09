@@ -3,7 +3,7 @@ type Project{
     name: String!
     description: String!
     languages: [String!]!
-    location: Location!
+    location: Location
     participants: [User!]!
     creator: User!
     addParticipant(id: ID!): Boolean!
