@@ -59,6 +59,23 @@ func (r *mutationResolver) RemoveSavedProject(ctx context.Context, id string) (b
 	return true, nil
 }
 
+func (r *mutationResolver) ProjectMutation(ctx context.Context, id string) (*model.ProjectMutation, error) {
+	// check here if user is allowed to modify project
+	me, err := auth.IdentityFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("authenticate please")
+	}
+
+	fetchedProject, err := r.queries.GetProjectByID(ctx, uuid.MustParse(id))
+	if err != nil {
+		return nil, err
+	}
+	if fetchedProject.Creator.String() != me.Id {
+		return nil, fmt.Errorf("only the creator can modify a project")
+	}
+	return &model.ProjectMutation{ID: id}, nil
+}
+
 func (r *projectResolver) Participants(ctx context.Context, obj *model.Project) ([]*model.User, error) {
 	dbParticipants, err := r.queries.GetParticipantsOfProject(context.Background(), uuid.MustParse(obj.ID))
 	if err != nil {
@@ -87,27 +104,35 @@ func (r *projectResolver) Creator(ctx context.Context, obj *model.Project) (*mod
 	}, nil
 }
 
-func (r *projectResolver) AddParticipant(ctx context.Context, obj *model.Project, id string) (bool, error) {
-	user, err := auth.IdentityFromContext(ctx)
-	if err != nil {
-		return false, err
-	}
-	if user.Id != obj.CreatorID {
-		return false, fmt.Errorf("only the creator can add participants")
-	}
-	err = r.queries.AddParticipantToProject(context.Background(), sql.AddParticipantToProjectParams{ProjectID: uuid.MustParse(obj.ID), UserID: uuid.MustParse(id)})
+func (r *projectMutationResolver) AddParticipant(ctx context.Context, obj *model.ProjectMutation, id string) (bool, error) {
+	err := r.queries.AddParticipantToProject(context.Background(), sql.AddParticipantToProjectParams{ProjectID: uuid.MustParse(obj.ID), UserID: uuid.MustParse(id)})
 	if err != nil {
 		return false, err
 	}
 	return true, nil
 }
 
-func (r *projectResolver) RemoveParticipant(ctx context.Context, obj *model.Project, id string) (bool, error) {
+func (r *projectMutationResolver) RemoveParticipant(ctx context.Context, obj *model.ProjectMutation, id string) (bool, error) {
 	err := r.queries.RemoveParticipantFromProject(context.Background(), sql.RemoveParticipantFromProjectParams{ProjectID: uuid.MustParse(obj.ID), UserID: uuid.MustParse(id)})
 	if err != nil {
 		return false, err
 	}
 	return true, nil
+}
+
+func (r *projectMutationResolver) DeleteProject(ctx context.Context, obj *model.ProjectMutation) (bool, error) {
+	err := r.queries.DeleteProject(context.Background(), uuid.MustParse(obj.ID))
+	return err == nil, err
+}
+
+func (r *projectMutationResolver) UpdateDescription(ctx context.Context, obj *model.ProjectMutation, newDescription string) (bool, error) {
+	err := r.queries.UpdateProjectDescription(context.Background(), sql.UpdateProjectDescriptionParams{ID: uuid.MustParse(obj.ID), Description: newDescription})
+	return err == nil, err
+}
+
+func (r *projectMutationResolver) UpdateName(ctx context.Context, obj *model.ProjectMutation, newName string) (bool, error) {
+	err := r.queries.UpdateProjectName(context.Background(), sql.UpdateProjectNameParams{ID: uuid.MustParse(obj.ID), Name: newName})
+	return err == nil, err
 }
 
 func (r *queryResolver) SearchProjects(ctx context.Context, searchString string, options model.SearchOptions, offset int, countLimit int) ([]*model.Project, error) {
@@ -166,4 +191,10 @@ func (r *queryResolver) SavedProjects(ctx context.Context) ([]*model.Project, er
 // Project returns generated.ProjectResolver implementation.
 func (r *Resolver) Project() generated.ProjectResolver { return &projectResolver{r} }
 
+// ProjectMutation returns generated.ProjectMutationResolver implementation.
+func (r *Resolver) ProjectMutation() generated.ProjectMutationResolver {
+	return &projectMutationResolver{r}
+}
+
 type projectResolver struct{ *Resolver }
+type projectMutationResolver struct{ *Resolver }

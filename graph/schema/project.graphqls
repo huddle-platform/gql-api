@@ -6,8 +6,14 @@ type Project{
     location: Location
     participants: [User!]!
     creator: User!
+}
+
+type ProjectMutation{
     addParticipant(id: ID!): Boolean!
     removeParticipant(id: ID!): Boolean!
+    deleteProject:Boolean!
+    updateDescription(newDescription:String!):Boolean!
+    updateName(newName:String!):Boolean!
 }
 
 type Location{
@@ -52,4 +58,5 @@ extend type Mutation{
     # add Project to list of saved projects, return updated list
     addSavedProject(id: ID!): Boolean!
     removeSavedProject(id: ID!):Boolean!
+    projectMutation(id:ID!):ProjectMutation
 }

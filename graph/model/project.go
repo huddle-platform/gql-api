@@ -8,3 +8,7 @@ type Project struct {
 	Location    *Location `json:"location"`
 	CreatorID   string
 }
+
+type ProjectMutation struct {
+	ID string
+}

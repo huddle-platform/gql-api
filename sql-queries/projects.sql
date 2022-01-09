@@ -21,6 +21,14 @@ WHERE participations.project_id = $1;
 -- name: AddParticipantToProject :exec
 INSERT INTO participations (user_id,project_id) VALUES($1,$2);
 
-
 -- name: RemoveParticipantFromProject :exec
 DELETE FROM participations WHERE user_id = $1 AND project_id = $2;
+
+-- name: DeleteProject :exec
+DELETE FROM projects WHERE id=$1;
+
+-- name: UpdateProjectName :exec
+UPDATE projects set name=$2 WHERE id=$1;
+
+-- name: UpdateProjectDescription :exec
+UPDATE projects set description=$2 WHERE id=$1;
