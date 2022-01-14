@@ -84,9 +84,10 @@ func (r *projectResolver) Participants(ctx context.Context, obj *model.Project) 
 	}
 	participants := make([]*model.User, len(dbParticipants))
 	for i, p := range dbParticipants {
+		username := p.Username
 		participants[i] = &model.User{
 			ID:       p.ID.String(),
-			Username: &p.Username,
+			Username: &username,
 		}
 	}
 	return participants, nil
@@ -110,11 +111,12 @@ func (r *projectResolver) Images(ctx context.Context, obj *model.Project) ([]*mo
 	}
 	toReturn := make([]*model.Image, len(images))
 	for i, img := range images {
+		description := img.Description.String
 		toReturn[i] = &model.Image{
 			ID:          img.ID.String(),
 			URL:         img.Url,
 			CreatedAt:   img.CreatedAt.Time,
-			Description: &img.Description.String,
+			Description: &description,
 			Priority:    float64(img.Priority),
 		}
 	}
@@ -192,12 +194,13 @@ func (r *queryResolver) SearchProjects(ctx context.Context, searchString string,
 	results := make([]*model.Project, len(dbResults))
 
 	for i, dbProject := range dbResults {
+		createdAt := dbProject.CreatedAt.Time
 		results[i] = &model.Project{
 			ID:          dbProject.ID.String(),
 			Name:        dbProject.Name,
 			Description: dbProject.Description,
 			CreatorID:   dbProject.Creator.String(),
-			CreatedAt:   &dbProject.CreatedAt.Time,
+			CreatedAt:   &createdAt,
 			Languages:   []string{},
 		}
 	}
