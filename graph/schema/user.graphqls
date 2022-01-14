@@ -9,6 +9,7 @@ type User {
 
 extend type Query {
   me: User! @isLoggedIn
+  meIfLoggedIn: User
   getUserByUsername(username: String!): User
 }
 extend type Mutation{

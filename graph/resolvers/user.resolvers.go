@@ -57,6 +57,11 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	return nil, err
 }
 
+func (r *queryResolver) MeIfLoggedIn(ctx context.Context) (*model.User, error) {
+	res, _ := r.Me(ctx)
+	return res, nil
+}
+
 func (r *queryResolver) GetUserByUsername(ctx context.Context, username string) (*model.User, error) {
 	user, err := r.queries.GetUserByUsername(ctx, username)
 	if err != nil {
