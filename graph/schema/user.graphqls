@@ -5,6 +5,8 @@ type User {
   email: String
   participations: [Project!]
   createdProjects: [Project!]
+  description: String!
+  profileImage: String
 }
 
 extend type Query {
@@ -14,4 +16,6 @@ extend type Query {
 }
 extend type Mutation{
   setMyUsername(username: String!): Boolean!
+  setMyDescription(description: String!): Boolean!
+  setMyProfileImage(profileImage: String): Boolean!
 }

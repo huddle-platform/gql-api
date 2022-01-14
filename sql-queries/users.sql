@@ -1,6 +1,6 @@
 
 -- name: CreateUser :one
-INSERT INTO users (id,username, email, profile_image) VALUES ($1,$2,$3,$4) RETURNING id;
+INSERT INTO users (id,username, profile_image) VALUES ($1,$2,$3) RETURNING id;
 
 -- name: GetUserByID :one
 SELECT * FROM users WHERE id=$1;
@@ -25,6 +25,10 @@ DELETE FROM project_saves WHERE user_id = $1 AND project_id = $2;
 
 -- name: SetUserName :exec
 UPDATE users SET username = $1 WHERE id = $2;
+-- name: SetDescription :exec
+UPDATE users SET description = $1 WHERE id = $2;
+-- name: SetProfileImage :exec
+UPDATE users SET profile_image = $1 WHERE id = $2;
 
 -- name: GetUserByUsername :one
 SELECT * FROM users WHERE username=$1;

@@ -86,7 +86,6 @@ func (r *projectResolver) Participants(ctx context.Context, obj *model.Project) 
 		participants[i] = &model.User{
 			ID:       p.ID.String(),
 			Username: &p.Username,
-			Email:    &p.Email,
 		}
 	}
 	return participants, nil
@@ -100,7 +99,6 @@ func (r *projectResolver) Creator(ctx context.Context, obj *model.Project) (*mod
 	return &model.User{
 		ID:       dbUser.ID.String(),
 		Username: &dbUser.Username,
-		Email:    &dbUser.Email,
 	}, nil
 }
 

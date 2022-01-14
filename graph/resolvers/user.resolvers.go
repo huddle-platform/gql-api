@@ -7,6 +7,8 @@ import (
 	"context"
 	"fmt"
 
+	packageSQL "database/sql"
+
 	"github.com/google/uuid"
 	"gitlab.lrz.de/projecthub/gql-api/auth"
 	"gitlab.lrz.de/projecthub/gql-api/graph/generated"
@@ -31,6 +33,27 @@ func (r *mutationResolver) SetMyUsername(ctx context.Context, username string) (
 	return true, nil
 }
 
+func (r *mutationResolver) SetMyDescription(ctx context.Context, description string) (bool, error) {
+	me, err := auth.IdentityFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+	err = r.queries.SetDescription(context.Background(), sql.SetDescriptionParams{Description: description, ID: uuid.MustParse(me.Id)})
+	return err == nil, err
+}
+
+func (r *mutationResolver) SetMyProfileImage(ctx context.Context, profileImage *string) (bool, error) {
+	me, err := auth.IdentityFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+	err = r.queries.SetProfileImage(context.Background(), sql.SetProfileImageParams{ProfileImage: packageSQL.NullString{
+		String: *profileImage,
+		Valid:  profileImage != nil,
+	}, ID: uuid.MustParse(me.Id)})
+	return err == nil, err
+}
+
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	me, err := auth.IdentityFromContext(ctx)
 	if err == nil {
@@ -39,8 +62,7 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 		if err != nil {
 			// create user in database if not exists
 			user := sql.CreateUserParams{
-				ID:    uuid.MustParse(me.Id),
-				Email: email,
+				ID: uuid.MustParse(me.Id),
 			}
 			r.queries.CreateUser(context.Background(), user)
 			return &model.User{
@@ -107,6 +129,25 @@ func (r *userResolver) CreatedProjects(ctx context.Context, obj *model.User) ([]
 
 	}
 	return results, nil
+}
+
+func (r *userResolver) Description(ctx context.Context, obj *model.User) (string, error) {
+	user, err := r.queries.GetUserByID(context.Background(), uuid.MustParse(obj.ID))
+	if err != nil {
+		return "", err
+	}
+	return user.Description, nil
+}
+
+func (r *userResolver) ProfileImage(ctx context.Context, obj *model.User) (*string, error) {
+	user, err := r.queries.GetUserByID(context.Background(), uuid.MustParse(obj.ID))
+	if err != nil {
+		return nil, err
+	}
+	if user.ProfileImage.Valid {
+		return &user.ProfileImage.String, nil
+	}
+	return nil, nil
 }
 
 // User returns generated.UserResolver implementation.
