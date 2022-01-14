@@ -5,9 +5,8 @@ package resolvers
 
 import (
 	"context"
-	"fmt"
-
 	packageSQL "database/sql"
+	"fmt"
 
 	"github.com/google/uuid"
 	"gitlab.lrz.de/projecthub/gql-api/auth"

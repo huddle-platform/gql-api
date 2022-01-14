@@ -1,3 +1,16 @@
+type Image{
+    id: ID!
+    url: String!
+    createdAt: Time!
+    description: String
+    priority: Float!
+}
+input NewImageInput{
+    url: String!
+    description: String
+    priority: Float
+}
+
 type Project{
     id: ID!
     name: String!
@@ -6,6 +19,8 @@ type Project{
     location: Location
     participants: [User!]!
     creator: User!
+    images: [Image!]!
+    createdAt: Time
 }
 
 type ProjectMutation{
@@ -14,6 +29,10 @@ type ProjectMutation{
     deleteProject:Boolean!
     updateDescription(newDescription:String!):Boolean!
     updateName(newName:String!):Boolean!
+    addImage(newImage: NewImageInput!): Boolean!
+    removeImage(id: ID!): Boolean!
+    updateImageDescription(id: ID!, newDescription: String): Boolean!
+    updateImagePriority(id: ID!, newPriority: Float!): Boolean!
 }
 
 type Location{

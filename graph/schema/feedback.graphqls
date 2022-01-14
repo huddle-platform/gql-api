@@ -1,0 +1,6 @@
+type FeedbackMutation {
+  submitImageNotWorking(imageID: ID!): Boolean!
+}
+extend type Mutation {
+  feedback: FeedbackMutation!
+}
