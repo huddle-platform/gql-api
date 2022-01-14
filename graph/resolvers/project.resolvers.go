@@ -159,10 +159,14 @@ func (r *projectMutationResolver) AddImage(ctx context.Context, obj *model.Proje
 	if newImage.Priority != nil {
 		priority = *newImage.Priority
 	}
+	description := sqlPackage.NullString{}
+	if newImage.Description != nil {
+		description = sqlPackage.NullString{String: *newImage.Description, Valid: true}
+	}
 	err := r.queries.AddImageToProject(context.Background(), sql.AddImageToProjectParams{
 		Project:     uuid.MustParse(obj.ID),
 		Url:         newImage.URL,
-		Description: sqlPackage.NullString{String: *newImage.Description, Valid: newImage.Description != nil},
+		Description: description,
 		Priority:    float32(priority),
 	})
 	return err == nil, err
