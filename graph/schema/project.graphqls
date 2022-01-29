@@ -1,81 +1,87 @@
-type Image{
-    id: ID!
-    url: String!
-    createdAt: Time!
-    description: String
-    priority: Float!
+type Image {
+  id: ID!
+  url: String!
+  createdAt: Time!
+  description: String
+  priority: Float!
 }
-input NewImageInput{
-    url: String!
-    description: String
-    priority: Float
-}
-
-type Project{
-    id: ID!
-    name: String!
-    description: String!
-    languages: [String!]!
-    location: Location
-    participants: [User!]!
-    creator: User!
-    images: [Image!]!
-    createdAt: Time
+input NewImageInput {
+  url: String!
+  description: String
+  priority: Float
 }
 
-type ProjectMutation{
-    addParticipant(id: ID!): Boolean!
-    removeParticipant(id: ID!): Boolean!
-    deleteProject:Boolean!
-    updateDescription(newDescription:String!):Boolean!
-    updateName(newName:String!):Boolean!
-    addImage(newImage: NewImageInput!): Boolean!
-    removeImage(id: ID!): Boolean!
-    updateImageDescription(id: ID!, newDescription: String): Boolean!
-    updateImagePriority(id: ID!, newPriority: Float!): Boolean!
+type Project {
+  id: ID!
+  name: String!
+  description: String!
+  languages: [String!]!
+  location: Location
+  participants: [User!]!
+  creator: User!
+  images: [Image!]!
+  createdAt: Time
+  # if the current user saved this project
+  saved: Boolean!
 }
 
-type Location{
-    name: String!
-    coordinates: Coordinate
+type ProjectMutation {
+  addParticipant(id: ID!): Boolean!
+  removeParticipant(id: ID!): Boolean!
+  deleteProject: Boolean!
+  updateDescription(newDescription: String!): Boolean!
+  updateName(newName: String!): Boolean!
+  addImage(newImage: NewImageInput!): Boolean!
+  removeImage(id: ID!): Boolean!
+  updateImageDescription(id: ID!, newDescription: String): Boolean!
+  updateImagePriority(id: ID!, newPriority: Float!): Boolean!
 }
 
-type Coordinate{
-    latitude: Float!
-    longitude: Float!
+type Location {
+  name: String!
+  coordinates: Coordinate
 }
 
-
-input SearchOptions{
-    filters:[String!]
-    cathegroy: String
+type Coordinate {
+  latitude: Float!
+  longitude: Float!
 }
 
-extend type Query{
-    searchProjects(searchString: String!, options: SearchOptions!={}, offset:Int!=0, countLimit: Int!=20): [Project!]!
-    getProject(id: ID!): Project
-    savedProjects: [Project!]
+input SearchOptions {
+  filters: [String!]
+  cathegroy: String
 }
 
-input LocationInput{
-    name: String!
-    coordinates: CoordinateInput
-}
-input CoordinateInput{
-    latitude: Float!
-    longitude: Float!
+extend type Query {
+  searchProjects(
+    searchString: String!
+    options: SearchOptions! = {}
+    offset: Int! = 0
+    countLimit: Int! = 20
+  ): [Project!]!
+  getProject(id: ID!): Project
+  savedProjects: [Project!]
 }
 
-input NewProjectInput{
-    name: String!
-    description: String!
-    languages: [String!]!
-    location: LocationInput
+input LocationInput {
+  name: String!
+  coordinates: CoordinateInput
 }
-extend type Mutation{
-    createProject(project: NewProjectInput): Project!
-    # add Project to list of saved projects, return updated list
-    addSavedProject(id: ID!): Boolean!
-    removeSavedProject(id: ID!):Boolean!
-    projectMutation(id:ID!):ProjectMutation
+input CoordinateInput {
+  latitude: Float!
+  longitude: Float!
+}
+
+input NewProjectInput {
+  name: String!
+  description: String!
+  languages: [String!]!
+  location: LocationInput
+}
+extend type Mutation {
+  createProject(project: NewProjectInput): Project!
+  # add Project to list of saved projects, return updated list
+  addSavedProject(id: ID!): Boolean!
+  removeSavedProject(id: ID!): Boolean!
+  projectMutation(id: ID!): ProjectMutation
 }

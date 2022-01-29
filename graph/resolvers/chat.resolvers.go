@@ -6,6 +6,7 @@ package resolvers
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"gitlab.lrz.de/projecthub/gql-api/auth"
@@ -18,11 +19,25 @@ func (r *chatResolver) Me(ctx context.Context, obj *model.Chat) (*model.User, er
 	return r.UserFromID(ctx, obj.Me_id)
 }
 
-func (r *chatResolver) Other(ctx context.Context, obj *model.Chat) (*model.User, error) {
+func (r *chatResolver) OtherUser(ctx context.Context, obj *model.Chat) (*model.User, error) {
+	if obj.ChatType != model.ChatTypeUser {
+		return nil, nil
+	}
 	return r.UserFromID(ctx, obj.Other_id)
 }
 
-func (r *chatResolver) Messages(ctx context.Context, obj *model.Chat, start int, count int) ([]*model.Message, error) {
+func (r *chatResolver) OtherProject(ctx context.Context, obj *model.Chat) (*model.Project, error) {
+	if obj.ChatType != model.ChatTypeProject {
+		return nil, nil
+	}
+	dbProject, err := r.queries.GetProjectByID(context.Background(), uuid.MustParse(obj.Other_id))
+	if err != nil {
+		return nil, err
+	}
+	return model.ProjectFromDBProject(dbProject), nil
+}
+
+func (r *chatResolver) Messages(ctx context.Context, obj *model.Chat, until *time.Time, count int) ([]*model.Message, error) {
 	me, err := auth.IdentityFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -30,10 +45,14 @@ func (r *chatResolver) Messages(ctx context.Context, obj *model.Chat, start int,
 	if obj.Me_id != me.Id {
 		return nil, fmt.Errorf("you are not allowed to read messages of other users")
 	}
+	untilDate := time.Now()
+	if until != nil {
+		untilDate = *until
+	}
 	dbChat, err := r.queries.GetMessagesBetweenUsers(ctx, sql.GetMessagesBetweenUsersParams{
 		SenderID:   uuid.MustParse(obj.Me_id),
 		ReceiverID: uuid.MustParse(obj.Other_id),
-		Offset:     int32(start),
+		Time:       untilDate,
 		Limit:      int32(count)})
 	if err != nil {
 		return nil, err
@@ -66,6 +85,51 @@ func (r *mutationResolver) WriteMessageToUser(ctx context.Context, userID string
 	return err == nil, nil
 }
 
+func (r *mutationResolver) WriteMessageToProject(ctx context.Context, projectID string, content string) (bool, error) {
+	me, err := auth.IdentityFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+	err = r.queries.WriteUserMessageToProject(context.Background(), sql.WriteUserMessageToProjectParams{
+		UserID:    uuid.MustParse(me.Id),
+		ProjectID: uuid.MustParse(projectID),
+		Content:   content,
+	})
+	return err == nil, nil
+}
+
+func (r *projectResolver) Chats(ctx context.Context, obj *model.Project) ([]*model.Chat, error) {
+	me, err := auth.IdentityFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if me.Id!=obj.CreatorID{
+		return nil, fmt.Errorf("you are not allowed to read chats of other projects")
+	}
+	dbChats, err := r.queries.GetChatsWithProject(context.Background(), uuid.MustParse(obj.ID))
+	if err != nil {
+		return nil, err
+	}
+	res := make([]*model.Chat, len(dbChats))
+	for i, dbChat := range dbChats {
+		res[i] = &model.Chat{
+			Me_id:    obj.ID,
+			Other_id: dbChat.String(),
+			ChatType: model.ChatTypeProject,
+		}
+	}
+	return res, nil
+}
+
+func (r *projectMutationResolver) WriteMessageToUser(ctx context.Context, obj *model.ProjectMutation, userID string, content string) (bool, error) {
+	err := r.queries.WriteProjectMessageToUser(context.Background(), sql.WriteProjectMessageToUserParams{
+		ProjectID: uuid.MustParse(obj.ID),
+		UserID:    uuid.MustParse(userID),
+		Content:   content,
+	})
+	return err == nil, nil
+}
+
 func (r *queryResolver) Chat(ctx context.Context, with string) (*model.Chat, error) {
 	me, err := auth.IdentityFromContext(ctx)
 	if err != nil {
@@ -82,15 +146,27 @@ func (r *queryResolver) Chats(ctx context.Context) ([]*model.Chat, error) {
 	if err != nil {
 		return nil, err
 	}
-	chatPartners, err := r.queries.GetChatsWithUser(context.Background(), uuid.MustParse(me.Id))
+	projectUserChats, err := r.queries.GetChatsWithCreatedProjects(context.Background(), uuid.MustParse(me.Id))
 	if err != nil {
 		return nil, err
 	}
-	res := make([]*model.Chat, len(chatPartners))
-	for i, chatPartner := range chatPartners {
+	userUserChats, err := r.queries.GetChatsWithUser(context.Background(), uuid.MustParse(me.Id))
+	if err != nil {
+		return nil, err
+	}
+	res := make([]*model.Chat, len(userUserChats)+len(projectUserChats))
+	for i, chatPartner := range userUserChats {
 		res[i] = &model.Chat{
 			Me_id:    me.Id,
 			Other_id: chatPartner.String(),
+			ChatType: model.ChatTypeUser,
+		}
+	}
+	for i, chatPartner := range projectUserChats {
+		res[i+len(userUserChats)] = &model.Chat{
+			Me_id:    me.Id,
+			Other_id: chatPartner.String(),
+			ChatType: model.ChatTypeProject,
 		}
 	}
 	return res, nil

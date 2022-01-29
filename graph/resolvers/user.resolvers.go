@@ -94,6 +94,10 @@ func (r *queryResolver) GetUserByUsername(ctx context.Context, username string) 
 	}, nil
 }
 
+func (r *userResolver) Name(ctx context.Context, obj *model.User) (*string, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 func (r *userResolver) Participations(ctx context.Context, obj *model.User) ([]*model.Project, error) {
 	dbResults, err := r.queries.GetUserParticipations(context.Background(), uuid.MustParse(obj.ID))
 	if err != nil {

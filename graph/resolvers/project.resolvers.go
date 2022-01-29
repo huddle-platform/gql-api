@@ -123,6 +123,23 @@ func (r *projectResolver) Images(ctx context.Context, obj *model.Project) ([]*mo
 	return toReturn, nil
 }
 
+func (r *projectResolver) Saved(ctx context.Context, obj *model.Project) (bool, error) {
+	me, err := auth.IdentityFromContext(ctx)
+	if err != nil {
+		return false, nil
+	}
+	savedProjects,err:=r.queries.GetSavedProjectsForUser(context.Background(), uuid.MustParse(me.Id))
+	if err != nil {
+		return false, err
+	}
+	for _, savedProject := range savedProjects {
+		if savedProject.ID.String() == obj.ID {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (r *projectMutationResolver) AddParticipant(ctx context.Context, obj *model.ProjectMutation, id string) (bool, error) {
 	err := r.queries.AddParticipantToProject(context.Background(), sql.AddParticipantToProjectParams{ProjectID: uuid.MustParse(obj.ID), UserID: uuid.MustParse(id)})
 	if err != nil {
@@ -195,19 +212,7 @@ func (r *queryResolver) SearchProjects(ctx context.Context, searchString string,
 	if err != nil {
 		return nil, err
 	}
-	results := make([]*model.Project, len(dbResults))
-
-	for i, dbProject := range dbResults {
-		createdAt := dbProject.CreatedAt.Time
-		results[i] = &model.Project{
-			ID:          dbProject.ID.String(),
-			Name:        dbProject.Name,
-			Description: dbProject.Description,
-			CreatorID:   dbProject.Creator.String(),
-			CreatedAt:   &createdAt,
-			Languages:   []string{},
-		}
-	}
+	results := model.ProjectsFromDBProjects(dbResults)
 	return results, nil
 }
 
@@ -216,12 +221,7 @@ func (r *queryResolver) GetProject(ctx context.Context, id string) (*model.Proje
 	if err != nil {
 		return nil, err
 	}
-	return &model.Project{
-		ID:          dbProject.ID.String(),
-		Name:        dbProject.Name,
-		Description: dbProject.Description,
-		CreatorID:   dbProject.Creator.String(),
-	}, nil
+	return model.ProjectFromDBProject(dbProject), nil
 }
 
 func (r *queryResolver) SavedProjects(ctx context.Context) ([]*model.Project, error) {
@@ -233,15 +233,7 @@ func (r *queryResolver) SavedProjects(ctx context.Context) ([]*model.Project, er
 	if err != nil {
 		return nil, err
 	}
-	results := make([]*model.Project, len(dbResults))
-	for i, p := range dbResults {
-		results[i] = &model.Project{
-			ID:          p.ID.String(),
-			Name:        p.Name,
-			Description: p.Description,
-			CreatorID:   p.Creator.String(),
-		}
-	}
+	results := model.ProjectsFromDBProjects(dbResults)
 	return results, nil
 }
 

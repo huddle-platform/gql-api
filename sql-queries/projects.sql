@@ -47,3 +47,6 @@ UPDATE images set priority=$2 WHERE id=$1;
 
 -- name: UpdateImageDescription :exec
 UPDATE images set description=$2 WHERE id=$1;
+
+-- name: SearchProjects :many
+SELECT * FROM projects WHERE title SIMILAR TO $3 OR description SIMILAR TO $3 ORDER BY created_at DESC LIMIT $1 OFFSET $2;

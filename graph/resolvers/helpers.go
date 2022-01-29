@@ -15,6 +15,7 @@ func (r *Resolver) UserFromID(ctx context.Context, id string) (*model.User, erro
 	return &model.User{
 		ID:       user.ID.String(),
 		Username: &user.Username,
+		
 	}, nil
 }
 

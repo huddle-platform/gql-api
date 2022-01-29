@@ -1,29 +1,43 @@
-
-enum MessageAuthor{
-    ME
-    OTHER
+enum MessageAuthor {
+  ME
+  OTHER
 }
-type Message{
-    author: MessageAuthor!
-    content: String!
-    time: Time!
-}
-
-
-type Chat{
-    me: User!
-    other: User!
-    messages(start: Int!=0,count:Int!=20): [Message!]!
+type Message {
+  author: MessageAuthor!
+  content: String!
+  time: Time!
 }
 
-extend type Query{
-    chat(with: ID!): Chat!
-    chats: [Chat!]
-    getChatByUsername(withUsername:String!): Chat
-    getChatById(withUserId:ID!): Chat
+enum ChatType {
+  PROJECT
+  USER
 }
-extend type Mutation{
-    writeMessageToUser(userId:ID!, content: String!): Boolean!
+
+type Chat {
+  chatType: ChatType!
+  me: User!
+  # not null if the chat is with a user
+  otherUser: User
+  # not null if the chat is with a project
+  otherProject: Project
+  messages(until: Time, count: Int! = 20): [Message!]!
+}
+
+extend type Query {
+  chat(with: ID!): Chat! @isLoggedIn
+  chats: [Chat!] @isLoggedIn
+  getChatByUsername(withUsername: String!): Chat @isLoggedIn
+  getChatById(withUserId: ID!): Chat @isLoggedIn
+}
+extend type Mutation {
+  writeMessageToUser(userId: ID!, content: String!): Boolean! @isLoggedIn
+  writeMessageToProject(projectId: ID!, content: String!): Boolean! @isLoggedIn
+}
+extend type ProjectMutation {
+  writeMessageToUser(userId: ID!, content: String!): Boolean!
+}
+extend type Project {
+  chats: [Chat!] @isLoggedIn
 }
 
 scalar Time

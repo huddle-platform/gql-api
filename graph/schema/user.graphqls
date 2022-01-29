@@ -2,6 +2,8 @@ directive @isLoggedIn on FIELD_DEFINITION
 type User {
   id: ID!
   username: String
+  # real name of the user
+  name: String
   email: String
   participations: [Project!]
   createdProjects: [Project!]
@@ -14,7 +16,7 @@ extend type Query {
   meIfLoggedIn: User
   getUserByUsername(username: String!): User
 }
-extend type Mutation{
+extend type Mutation {
   setMyUsername(username: String!): Boolean!
   setMyDescription(description: String!): Boolean!
   setMyProfileImage(profileImage: String): Boolean!
