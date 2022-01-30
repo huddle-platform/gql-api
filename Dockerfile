@@ -5,7 +5,7 @@ COPY go.sum ./
 RUN go mod download
 COPY graph ./graph
 COPY auth ./auth
-COPY sql ./sql
+COPY sqlc ./sqlc
 COPY server.go ./
 RUN go build -o /app/main
 

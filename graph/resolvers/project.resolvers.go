@@ -198,9 +198,9 @@ func (r *projectMutationResolver) UpdateImagePriority(ctx context.Context, obj *
 func (r *queryResolver) SearchProjects(ctx context.Context, searchString string, options model.SearchOptions, offset int, countLimit int) ([]*model.Project, error) {
 	//dbResults, err := r.queries.GetProjects(context.Background(), sqlc.GetProjectsParams{Limit: int32(countLimit), Offset: int32(offset)})
 	dbResults, err := r.queries.SearchProjects(context.Background(), sqlc.SearchProjectsParams{
-		Limit:           int32(countLimit),
-		Offset:          int32(offset),
-		SimilarToEscape: searchString + ".*",
+		Limit:  int32(countLimit),
+		Offset: int32(offset),
+		Name:   "%" + searchString + "%",
 	})
 	if err != nil {
 		return nil, err
@@ -210,6 +210,9 @@ func (r *queryResolver) SearchProjects(ctx context.Context, searchString string,
 }
 
 func (r *queryResolver) GetProject(ctx context.Context, id string) (*model.Project, error) {
+	if id == "" {
+		return nil, fmt.Errorf("id is empty")
+	}
 	dbProject, err := r.queries.GetProjectByID(context.Background(), uuid.MustParse(id))
 	if err != nil {
 		return nil, err

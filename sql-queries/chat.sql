@@ -2,11 +2,9 @@
 INSERT INTO messages (sender_id,receiver_id,content) VALUES ($1,$2,$3);
 
 
--- name: WriteProjectMessageToUser :exec
-INSERT INTO projectMessages (project_id,user_id,content) VALUES ($1,$2,$3);
+-- name: WriteProjectUserMessage :exec
+INSERT INTO projectMessages (project_id,user_id,userIsSender,content) VALUES ($1,$2,$3,$4);
 
--- name: WriteUserMessageToProject :exec
-INSERT INTO projectMessages (user_id,project_id,content) VALUES ($1,$2,$3);
 
 -- name: GetMessagesBetweenUsers :many
 SELECT * FROM messages
@@ -26,7 +24,7 @@ ON messages.receiver_id = users.id
 WHERE messages.sender_id=$1;
 
 -- name: GetProjectChatsWithUser :many
-SELECT DISTINCT ON(projects.odd) projects.*
+SELECT DISTINCT ON(projects.id) projects.*
 FROM projectMessages INNER JOIN projects
 ON projectMessages.project_id = projects.id
 WHERE projectMessages.user_id=$1;

@@ -1,3 +1,3 @@
-tag="0.1.23"
+tag="0.1.24"
 docker build -t olepetersen/gql-api:$tag .
 docker push olepetersen/gql-api:$tag

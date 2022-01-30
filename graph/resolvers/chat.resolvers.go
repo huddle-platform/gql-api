@@ -85,7 +85,6 @@ func (r *chatResolver) Messages(ctx context.Context, obj *model.Chat, until *tim
 		return res, nil
 
 	}
-	return nil, fmt.Errorf("unsupported chat type")
 }
 
 func (r *mutationResolver) WriteMessageToUser(ctx context.Context, userID string, content string) (bool, error) {
@@ -98,7 +97,7 @@ func (r *mutationResolver) WriteMessageToUser(ctx context.Context, userID string
 		ReceiverID: uuid.MustParse(userID),
 		Content:    content,
 	})
-	return err == nil, nil
+	return err == nil, err
 }
 
 func (r *mutationResolver) WriteMessageToProject(ctx context.Context, projectID string, content string) (bool, error) {
@@ -106,12 +105,13 @@ func (r *mutationResolver) WriteMessageToProject(ctx context.Context, projectID 
 	if err != nil {
 		return false, err
 	}
-	err = r.queries.WriteUserMessageToProject(context.Background(), sqlc.WriteUserMessageToProjectParams{
-		UserID:    uuid.MustParse(me.Id),
-		ProjectID: uuid.MustParse(projectID),
-		Content:   content,
+	err = r.queries.WriteProjectUserMessage(context.Background(), sqlc.WriteProjectUserMessageParams{
+		UserID:       uuid.MustParse(me.Id),
+		ProjectID:    uuid.MustParse(projectID),
+		Userissender: true,
+		Content:      content,
 	})
-	return err == nil, nil
+	return err == nil, err
 }
 
 func (r *projectResolver) Chats(ctx context.Context, obj *model.Project) ([]*model.Chat, error) {
@@ -165,12 +165,13 @@ func (r *projectResolver) GetChatByUserID(ctx context.Context, obj *model.Projec
 }
 
 func (r *projectMutationResolver) WriteMessageToUser(ctx context.Context, obj *model.ProjectMutation, userID string, content string) (bool, error) {
-	err := r.queries.WriteProjectMessageToUser(context.Background(), sqlc.WriteProjectMessageToUserParams{
-		ProjectID: uuid.MustParse(obj.ID),
-		UserID:    uuid.MustParse(userID),
-		Content:   content,
+	err := r.queries.WriteProjectUserMessage(context.Background(), sqlc.WriteProjectUserMessageParams{
+		ProjectID:    uuid.MustParse(obj.ID),
+		UserID:       uuid.MustParse(userID),
+		Content:      content,
+		Userissender: false,
 	})
-	return err == nil, nil
+	return err == nil, err
 }
 
 func (r *queryResolver) Chats(ctx context.Context) ([]*model.Chat, error) {
