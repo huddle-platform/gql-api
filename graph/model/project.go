@@ -3,7 +3,7 @@ package model
 import (
 	"time"
 
-	"gitlab.lrz.de/projecthub/gql-api/sql"
+	"gitlab.lrz.de/projecthub/gql-api/sqlc"
 )
 
 type Project struct {
@@ -16,7 +16,7 @@ type Project struct {
 	CreatorID   string
 }
 
-func ProjectFromDBProject(dbProject sql.Project) *Project {
+func ProjectFromDBProject(dbProject sqlc.Project) *Project {
 	createdAt := &dbProject.CreatedAt.Time
 	if !dbProject.CreatedAt.Valid {
 		createdAt = nil
@@ -38,7 +38,7 @@ func ProjectFromDBProject(dbProject sql.Project) *Project {
 	}
 }
 
-func ProjectsFromDBProjects(dbProject []sql.Project) []*Project {
+func ProjectsFromDBProjects(dbProject []sqlc.Project) []*Project {
 	projects := make([]*Project, len(dbProject))
 	for i, dbProject := range dbProject {
 		projects[i] = ProjectFromDBProject(dbProject)

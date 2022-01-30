@@ -5,14 +5,14 @@ package resolvers
 
 import (
 	"context"
-	packageSQL "database/sql"
+	"database/sql"
 	"fmt"
 
 	"github.com/google/uuid"
 	"gitlab.lrz.de/projecthub/gql-api/auth"
 	"gitlab.lrz.de/projecthub/gql-api/graph/generated"
 	"gitlab.lrz.de/projecthub/gql-api/graph/model"
-	"gitlab.lrz.de/projecthub/gql-api/sql"
+	"gitlab.lrz.de/projecthub/gql-api/sqlc"
 )
 
 func (r *mutationResolver) SetMyUsername(ctx context.Context, username string) (bool, error) {
@@ -25,11 +25,28 @@ func (r *mutationResolver) SetMyUsername(ctx context.Context, username string) (
 		return false, fmt.Errorf("username %s already taken", username)
 	}
 
-	err = r.queries.SetUserName(context.Background(), sql.SetUserNameParams{Username: username, ID: uuid.MustParse(me.Id)})
+	err = r.queries.SetUserName(context.Background(), sqlc.SetUserNameParams{Username: username, ID: uuid.MustParse(me.Id)})
 	if err != nil {
 		return false, err
 	}
 	return true, nil
+}
+
+func (r *mutationResolver) SetMyName(ctx context.Context, name *string) (bool, error) {
+	me, err := auth.IdentityFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+	nameToSet := sql.NullString{
+		Valid: false,
+	}
+	if name != nil {
+		nameToSet.String = *name
+		nameToSet.Valid = true
+	}
+
+	err = r.queries.SetName(context.Background(), sqlc.SetNameParams{Name: nameToSet, ID: uuid.MustParse(me.Id)})
+	return err == nil, err
 }
 
 func (r *mutationResolver) SetMyDescription(ctx context.Context, description string) (bool, error) {
@@ -37,7 +54,7 @@ func (r *mutationResolver) SetMyDescription(ctx context.Context, description str
 	if err != nil {
 		return false, err
 	}
-	err = r.queries.SetDescription(context.Background(), sql.SetDescriptionParams{Description: description, ID: uuid.MustParse(me.Id)})
+	err = r.queries.SetDescription(context.Background(), sqlc.SetDescriptionParams{Description: description, ID: uuid.MustParse(me.Id)})
 	return err == nil, err
 }
 
@@ -46,7 +63,7 @@ func (r *mutationResolver) SetMyProfileImage(ctx context.Context, profileImage *
 	if err != nil {
 		return false, err
 	}
-	err = r.queries.SetProfileImage(context.Background(), sql.SetProfileImageParams{ProfileImage: packageSQL.NullString{
+	err = r.queries.SetProfileImage(context.Background(), sqlc.SetProfileImageParams{ProfileImage: sql.NullString{
 		String: *profileImage,
 		Valid:  profileImage != nil,
 	}, ID: uuid.MustParse(me.Id)})
@@ -60,7 +77,7 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 		user, err := r.queries.GetUserByID(context.Background(), uuid.MustParse(me.Id))
 		if err != nil {
 			// create user in database if not exists
-			user := sql.CreateUserParams{
+			user := sqlc.CreateUserParams{
 				ID: uuid.MustParse(me.Id),
 			}
 			r.queries.CreateUser(context.Background(), user)

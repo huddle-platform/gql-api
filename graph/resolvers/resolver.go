@@ -1,9 +1,9 @@
 package resolvers
 
 import (
-	dbsql "database/sql"
+	"database/sql"
 
-	"gitlab.lrz.de/projecthub/gql-api/sql"
+	"gitlab.lrz.de/projecthub/gql-api/sqlc"
 
 	_ "github.com/lib/pq"
 
@@ -14,16 +14,16 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	queries *sql.Queries
+	queries *sqlc.Queries
 }
 
 func NewResolver(connstring string) (*Resolver, error) {
 	//db, err := pgxpool.Connect(context.Background(), connstring)
-	db, err := dbsql.Open("postgres", connstring)
+	db, err := sql.Open("postgres", connstring)
 	if err != nil {
 		return nil, err
 	}
-	queries := sql.New(db)
+	queries := sqlc.New(db)
 	return &Resolver{
 		queries: queries,
 	}, nil

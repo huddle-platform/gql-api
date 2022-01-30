@@ -1,6 +1,6 @@
 graph/generated
 graph/model/models_gen.go
 .vscode/launch.json
-sql
+sqlc
 schema.sql
 gql-api

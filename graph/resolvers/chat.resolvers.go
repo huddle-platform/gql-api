@@ -12,7 +12,7 @@ import (
 	"gitlab.lrz.de/projecthub/gql-api/auth"
 	"gitlab.lrz.de/projecthub/gql-api/graph/generated"
 	"gitlab.lrz.de/projecthub/gql-api/graph/model"
-	"gitlab.lrz.de/projecthub/gql-api/sql"
+	"gitlab.lrz.de/projecthub/gql-api/sqlc"
 )
 
 func (r *chatResolver) Me(ctx context.Context, obj *model.Chat) (*model.User, error) {
@@ -49,7 +49,7 @@ func (r *chatResolver) Messages(ctx context.Context, obj *model.Chat, until *tim
 	if until != nil {
 		untilDate = *until
 	}
-	dbChat, err := r.queries.GetMessagesBetweenUsers(ctx, sql.GetMessagesBetweenUsersParams{
+	dbChat, err := r.queries.GetMessagesBetweenUsers(ctx, sqlc.GetMessagesBetweenUsersParams{
 		SenderID:   uuid.MustParse(obj.Me_id),
 		ReceiverID: uuid.MustParse(obj.Other_id),
 		Time:       untilDate,
@@ -77,7 +77,7 @@ func (r *mutationResolver) WriteMessageToUser(ctx context.Context, userID string
 	if err != nil {
 		return false, err
 	}
-	err = r.queries.WriteMessage(context.Background(), sql.WriteMessageParams{
+	err = r.queries.WriteMessage(context.Background(), sqlc.WriteMessageParams{
 		SenderID:   uuid.MustParse(me.Id),
 		ReceiverID: uuid.MustParse(userID),
 		Content:    content,
@@ -90,7 +90,7 @@ func (r *mutationResolver) WriteMessageToProject(ctx context.Context, projectID 
 	if err != nil {
 		return false, err
 	}
-	err = r.queries.WriteUserMessageToProject(context.Background(), sql.WriteUserMessageToProjectParams{
+	err = r.queries.WriteUserMessageToProject(context.Background(), sqlc.WriteUserMessageToProjectParams{
 		UserID:    uuid.MustParse(me.Id),
 		ProjectID: uuid.MustParse(projectID),
 		Content:   content,
@@ -103,7 +103,7 @@ func (r *projectResolver) Chats(ctx context.Context, obj *model.Project) ([]*mod
 	if err != nil {
 		return nil, err
 	}
-	if me.Id!=obj.CreatorID{
+	if me.Id != obj.CreatorID {
 		return nil, fmt.Errorf("you are not allowed to read chats of other projects")
 	}
 	dbChats, err := r.queries.GetChatsWithProject(context.Background(), uuid.MustParse(obj.ID))
@@ -122,7 +122,7 @@ func (r *projectResolver) Chats(ctx context.Context, obj *model.Project) ([]*mod
 }
 
 func (r *projectMutationResolver) WriteMessageToUser(ctx context.Context, obj *model.ProjectMutation, userID string, content string) (bool, error) {
-	err := r.queries.WriteProjectMessageToUser(context.Background(), sql.WriteProjectMessageToUserParams{
+	err := r.queries.WriteProjectMessageToUser(context.Background(), sqlc.WriteProjectMessageToUserParams{
 		ProjectID: uuid.MustParse(obj.ID),
 		UserID:    uuid.MustParse(userID),
 		Content:   content,

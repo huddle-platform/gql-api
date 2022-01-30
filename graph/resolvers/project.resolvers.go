@@ -12,7 +12,7 @@ import (
 	"gitlab.lrz.de/projecthub/gql-api/auth"
 	"gitlab.lrz.de/projecthub/gql-api/graph/generated"
 	"gitlab.lrz.de/projecthub/gql-api/graph/model"
-	"gitlab.lrz.de/projecthub/gql-api/sql"
+	"gitlab.lrz.de/projecthub/gql-api/sqlc"
 )
 
 func (r *mutationResolver) CreateProject(ctx context.Context, project *model.NewProjectInput) (*model.Project, error) {
@@ -20,7 +20,7 @@ func (r *mutationResolver) CreateProject(ctx context.Context, project *model.New
 	if err != nil {
 		return nil, err
 	}
-	projectID, err := r.queries.CreateProject(ctx, sql.CreateProjectParams{Name: project.Name, Description: project.Description, Creator: uuid.MustParse(user.Id)})
+	projectID, err := r.queries.CreateProject(ctx, sqlc.CreateProjectParams{Name: project.Name, Description: project.Description, Creator: uuid.MustParse(user.Id)})
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func (r *mutationResolver) AddSavedProject(ctx context.Context, id string) (bool
 	if err != nil {
 		return false, err
 	}
-	err = r.queries.SaveProjectForUser(context.Background(), sql.SaveProjectForUserParams{UserID: uuid.MustParse(user.Id), ProjectID: uuid.MustParse(id)})
+	err = r.queries.SaveProjectForUser(context.Background(), sqlc.SaveProjectForUserParams{UserID: uuid.MustParse(user.Id), ProjectID: uuid.MustParse(id)})
 	if err != nil {
 		return false, err
 	}
@@ -53,7 +53,7 @@ func (r *mutationResolver) RemoveSavedProject(ctx context.Context, id string) (b
 	if err != nil {
 		return false, err
 	}
-	err = r.queries.UnsaveProjectForUser(context.Background(), sql.UnsaveProjectForUserParams{UserID: uuid.MustParse(user.Id), ProjectID: uuid.MustParse(id)})
+	err = r.queries.UnsaveProjectForUser(context.Background(), sqlc.UnsaveProjectForUserParams{UserID: uuid.MustParse(user.Id), ProjectID: uuid.MustParse(id)})
 	if err != nil {
 		return false, err
 	}
@@ -128,7 +128,7 @@ func (r *projectResolver) Saved(ctx context.Context, obj *model.Project) (bool, 
 	if err != nil {
 		return false, nil
 	}
-	savedProjects,err:=r.queries.GetSavedProjectsForUser(context.Background(), uuid.MustParse(me.Id))
+	savedProjects, err := r.queries.GetSavedProjectsForUser(context.Background(), uuid.MustParse(me.Id))
 	if err != nil {
 		return false, err
 	}
@@ -141,7 +141,7 @@ func (r *projectResolver) Saved(ctx context.Context, obj *model.Project) (bool, 
 }
 
 func (r *projectMutationResolver) AddParticipant(ctx context.Context, obj *model.ProjectMutation, id string) (bool, error) {
-	err := r.queries.AddParticipantToProject(context.Background(), sql.AddParticipantToProjectParams{ProjectID: uuid.MustParse(obj.ID), UserID: uuid.MustParse(id)})
+	err := r.queries.AddParticipantToProject(context.Background(), sqlc.AddParticipantToProjectParams{ProjectID: uuid.MustParse(obj.ID), UserID: uuid.MustParse(id)})
 	if err != nil {
 		return false, err
 	}
@@ -149,7 +149,7 @@ func (r *projectMutationResolver) AddParticipant(ctx context.Context, obj *model
 }
 
 func (r *projectMutationResolver) RemoveParticipant(ctx context.Context, obj *model.ProjectMutation, id string) (bool, error) {
-	err := r.queries.RemoveParticipantFromProject(context.Background(), sql.RemoveParticipantFromProjectParams{ProjectID: uuid.MustParse(obj.ID), UserID: uuid.MustParse(id)})
+	err := r.queries.RemoveParticipantFromProject(context.Background(), sqlc.RemoveParticipantFromProjectParams{ProjectID: uuid.MustParse(obj.ID), UserID: uuid.MustParse(id)})
 	if err != nil {
 		return false, err
 	}
@@ -162,12 +162,12 @@ func (r *projectMutationResolver) DeleteProject(ctx context.Context, obj *model.
 }
 
 func (r *projectMutationResolver) UpdateDescription(ctx context.Context, obj *model.ProjectMutation, newDescription string) (bool, error) {
-	err := r.queries.UpdateProjectDescription(context.Background(), sql.UpdateProjectDescriptionParams{ID: uuid.MustParse(obj.ID), Description: newDescription})
+	err := r.queries.UpdateProjectDescription(context.Background(), sqlc.UpdateProjectDescriptionParams{ID: uuid.MustParse(obj.ID), Description: newDescription})
 	return err == nil, err
 }
 
 func (r *projectMutationResolver) UpdateName(ctx context.Context, obj *model.ProjectMutation, newName string) (bool, error) {
-	err := r.queries.UpdateProjectName(context.Background(), sql.UpdateProjectNameParams{ID: uuid.MustParse(obj.ID), Name: newName})
+	err := r.queries.UpdateProjectName(context.Background(), sqlc.UpdateProjectNameParams{ID: uuid.MustParse(obj.ID), Name: newName})
 	return err == nil, err
 }
 
@@ -180,7 +180,7 @@ func (r *projectMutationResolver) AddImage(ctx context.Context, obj *model.Proje
 	if newImage.Description != nil {
 		description = sqlPackage.NullString{String: *newImage.Description, Valid: true}
 	}
-	err := r.queries.AddImageToProject(context.Background(), sql.AddImageToProjectParams{
+	err := r.queries.AddImageToProject(context.Background(), sqlc.AddImageToProjectParams{
 		Project:     uuid.MustParse(obj.ID),
 		Url:         newImage.URL,
 		Description: description,
@@ -195,7 +195,7 @@ func (r *projectMutationResolver) RemoveImage(ctx context.Context, obj *model.Pr
 }
 
 func (r *projectMutationResolver) UpdateImageDescription(ctx context.Context, obj *model.ProjectMutation, id string, newDescription *string) (bool, error) {
-	err := r.queries.UpdateImageDescription(context.Background(), sql.UpdateImageDescriptionParams{ID: uuid.MustParse(id), Description: sqlPackage.NullString{
+	err := r.queries.UpdateImageDescription(context.Background(), sqlc.UpdateImageDescriptionParams{ID: uuid.MustParse(id), Description: sqlPackage.NullString{
 		String: *newDescription,
 		Valid:  newDescription != nil,
 	}})
@@ -203,12 +203,12 @@ func (r *projectMutationResolver) UpdateImageDescription(ctx context.Context, ob
 }
 
 func (r *projectMutationResolver) UpdateImagePriority(ctx context.Context, obj *model.ProjectMutation, id string, newPriority float64) (bool, error) {
-	err := r.queries.UpdateImagePriority(context.Background(), sql.UpdateImagePriorityParams{ID: uuid.MustParse(id), Priority: float32(newPriority)})
+	err := r.queries.UpdateImagePriority(context.Background(), sqlc.UpdateImagePriorityParams{ID: uuid.MustParse(id), Priority: float32(newPriority)})
 	return err == nil, err
 }
 
 func (r *queryResolver) SearchProjects(ctx context.Context, searchString string, options model.SearchOptions, offset int, countLimit int) ([]*model.Project, error) {
-	dbResults, err := r.queries.GetProjects(context.Background(), sql.GetProjectsParams{Limit: int32(countLimit), Offset: int32(offset)})
+	dbResults, err := r.queries.GetProjects(context.Background(), sqlc.GetProjectsParams{Limit: int32(countLimit), Offset: int32(offset)})
 	if err != nil {
 		return nil, err
 	}
