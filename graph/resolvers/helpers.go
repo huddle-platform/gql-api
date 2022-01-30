@@ -12,14 +12,18 @@ func (r *Resolver) UserFromID(ctx context.Context, id string) (*model.User, erro
 	if err != nil {
 		return nil, err
 	}
+	var name *string
+	if user.Name.Valid {
+		name = &user.Name.String
+	}
 	return &model.User{
 		ID:       user.ID.String(),
-		Username: &user.Username,
-		
+		Username: user.Username,
+		Name:     name,
 	}, nil
 }
 
-func (r *Resolver)UserIdFromusername(ctx context.Context, username string) (string, error) {
+func (r *Resolver) UserIdFromusername(ctx context.Context, username string) (string, error) {
 	user, err := r.queries.GetUserByUsername(ctx, username)
 	if err != nil {
 		return "", err

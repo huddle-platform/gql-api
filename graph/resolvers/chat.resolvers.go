@@ -42,34 +42,85 @@ func (r *chatResolver) Messages(ctx context.Context, obj *model.Chat, until *tim
 	if err != nil {
 		return nil, err
 	}
-	if obj.Me_id != me.Id {
-		return nil, fmt.Errorf("you are not allowed to read messages of other users")
-	}
 	untilDate := time.Now()
 	if until != nil {
 		untilDate = *until
 	}
-	dbChat, err := r.queries.GetMessagesBetweenUsers(ctx, sqlc.GetMessagesBetweenUsersParams{
-		SenderID:   uuid.MustParse(obj.Me_id),
-		ReceiverID: uuid.MustParse(obj.Other_id),
-		Time:       untilDate,
-		Limit:      int32(count)})
-	if err != nil {
-		return nil, err
-	}
-	res := make([]*model.Message, len(dbChat))
-	for i, dbMessage := range dbChat {
-		author := model.MessageAuthorMe
-		if dbMessage.SenderID.String() != obj.Me_id {
-			author = model.MessageAuthorOther
+	if obj.ChatType == model.ChatTypeUser {
+		if obj.Me_id != me.Id {
+			return nil, fmt.Errorf("you are not allowed to read messages of other users")
 		}
-		res[i] = &model.Message{
-			Author:  author,
-			Content: dbMessage.Content,
-			Time:    dbMessage.Time,
+		dbChat, err := r.queries.GetMessagesBetweenUsers(ctx, sqlc.GetMessagesBetweenUsersParams{
+			SenderID:   uuid.MustParse(obj.Me_id),
+			ReceiverID: uuid.MustParse(obj.Other_id),
+			Time:       untilDate,
+			Limit:      int32(count)})
+		if err != nil {
+			return nil, err
+		}
+		res := make([]*model.Message, len(dbChat))
+		for i, dbMessage := range dbChat {
+			author := model.MessageAuthorMe
+			if dbMessage.SenderID.String() != obj.Me_id {
+				author = model.MessageAuthorOther
+			}
+			res[i] = &model.Message{
+				Author:  author,
+				Content: dbMessage.Content,
+				Time:    dbMessage.Time,
+			}
+		}
+		return res, nil
+	} else if obj.ChatType == model.ChatTypeProject {
+		if obj.Me_id == me.Id {
+			// you are the user, the other user is the project, obj.Other_id is the project id
+			dbChat, err := r.queries.GetMessagesBetweenUserAndProject(ctx, sqlc.GetMessagesBetweenUserAndProjectParams{
+				UserID:    uuid.MustParse(obj.Me_id),
+				ProjectID: uuid.MustParse(obj.Other_id),
+				Time:      untilDate,
+				Limit:     int32(count)})
+			if err != nil {
+				return nil, err
+			}
+			res := make([]*model.Message, len(dbChat))
+			for i, dbMessage := range dbChat {
+				author := model.MessageAuthorMe
+				if !dbMessage.Userissender {
+					author = model.MessageAuthorProject
+				}
+				res[i] = &model.Message{
+					Author:  author,
+					Content: dbMessage.Content,
+					Time:    dbMessage.Time,
+				}
+			}
+			return res, nil
+		} else {
+			// you are the project, the other user is the user. obj.Me_id is the project id
+			dbChat, err := r.queries.GetMessagesBetweenUserAndProject(ctx, sqlc.GetMessagesBetweenUserAndProjectParams{
+				UserID:    uuid.MustParse(obj.Other_id),
+				ProjectID: uuid.MustParse(obj.Me_id),
+				Time:      untilDate,
+				Limit:     int32(count)})
+			if err != nil {
+				return nil, err
+			}
+			res := make([]*model.Message, len(dbChat))
+			for i, dbMessage := range dbChat {
+				author := model.MessageAuthorProject
+				if dbMessage.Userissender {
+					author = model.MessageAuthorProject
+				}
+				res[i] = &model.Message{
+					Author:  author,
+					Content: dbMessage.Content,
+					Time:    dbMessage.Time,
+				}
+			}
+			return res, nil
 		}
 	}
-	return res, nil
+	return nil, fmt.Errorf("unsupported chat type")
 }
 
 func (r *mutationResolver) WriteMessageToUser(ctx context.Context, userID string, content string) (bool, error) {
@@ -119,6 +170,21 @@ func (r *projectResolver) Chats(ctx context.Context, obj *model.Project) ([]*mod
 		}
 	}
 	return res, nil
+}
+
+func (r *projectResolver) GetChatByUserID(ctx context.Context, obj *model.Project, withUserID string) (*model.Chat, error) {
+	me, err := auth.IdentityFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if me.Id != obj.CreatorID {
+		return nil, fmt.Errorf("you are not allowed to read chats of other projects")
+	}
+	return &model.Chat{
+		Me_id:    obj.ID,
+		Other_id: withUserID,
+		ChatType: model.ChatTypeProject,
+	}, nil
 }
 
 func (r *projectMutationResolver) WriteMessageToUser(ctx context.Context, obj *model.ProjectMutation, userID string, content string) (bool, error) {
@@ -187,7 +253,7 @@ func (r *queryResolver) GetChatByUsername(ctx context.Context, withUsername stri
 	}, nil
 }
 
-func (r *queryResolver) GetChatByID(ctx context.Context, withUserID string) (*model.Chat, error) {
+func (r *queryResolver) GetChatByUserID(ctx context.Context, withUserID string) (*model.Chat, error) {
 	me, err := auth.IdentityFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -195,6 +261,19 @@ func (r *queryResolver) GetChatByID(ctx context.Context, withUserID string) (*mo
 	return &model.Chat{
 		Me_id:    me.Id,
 		Other_id: withUserID,
+		ChatType: model.ChatTypeUser,
+	}, nil
+}
+
+func (r *queryResolver) GetChatByProjectID(ctx context.Context, withProjectID string) (*model.Chat, error) {
+	me, err := auth.IdentityFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.Chat{
+		Me_id:    me.Id,
+		Other_id: withProjectID,
+		ChatType: model.ChatTypeProject,
 	}, nil
 }
 

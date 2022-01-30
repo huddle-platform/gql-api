@@ -86,11 +86,9 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 				Email: &email,
 			}, nil
 		}
-		return &model.User{
-			ID:       me.Id,
-			Email:    &email,
-			Username: &user.Username,
-		}, nil
+		res := model.DBUserToUser(user)
+		res.Email = &email
+		return res, nil
 	}
 	return nil, err
 }
@@ -105,14 +103,7 @@ func (r *queryResolver) GetUserByUsername(ctx context.Context, username string) 
 	if err != nil {
 		return nil, err
 	}
-	return &model.User{
-		ID:       user.ID.String(),
-		Username: &user.Username,
-	}, nil
-}
-
-func (r *userResolver) Name(ctx context.Context, obj *model.User) (*string, error) {
-	panic(fmt.Errorf("not implemented"))
+	return model.DBUserToUser(user), nil
 }
 
 func (r *userResolver) Participations(ctx context.Context, obj *model.User) ([]*model.Project, error) {
@@ -120,15 +111,7 @@ func (r *userResolver) Participations(ctx context.Context, obj *model.User) ([]*
 	if err != nil {
 		return nil, err
 	}
-	results := make([]*model.Project, len(dbResults))
-	for i, res := range dbResults {
-		results[i] = &model.Project{
-			ID:          res.ID.String(),
-			Name:        res.Name,
-			Description: res.Description,
-			CreatorID:   res.Creator.String(),
-		}
-	}
+	results := model.ProjectsFromDBProjects(dbResults)
 	return results, nil
 }
 
@@ -137,17 +120,7 @@ func (r *userResolver) CreatedProjects(ctx context.Context, obj *model.User) ([]
 	if err != nil {
 		return nil, err
 	}
-	results := make([]*model.Project, len(dbResults))
-	for i, res := range dbResults {
-		{
-			results[i] = &model.Project{
-				ID:          res.ID.String(),
-				Name:        res.Name,
-				Description: res.Description,
-			}
-		}
-
-	}
+	results := model.ProjectsFromDBProjects(dbResults)
 	return results, nil
 }
 

@@ -28,12 +28,7 @@ func (r *mutationResolver) CreateProject(ctx context.Context, project *model.New
 	if err != nil {
 		return nil, err
 	}
-	return &model.Project{
-		ID:          fetchedProject.ID.String(),
-		Name:        fetchedProject.Name,
-		Description: fetchedProject.Description,
-		CreatorID:   fetchedProject.Creator.String(),
-	}, nil
+	return model.ProjectFromDBProject(fetchedProject), nil
 }
 
 func (r *mutationResolver) AddSavedProject(ctx context.Context, id string) (bool, error) {
@@ -84,11 +79,7 @@ func (r *projectResolver) Participants(ctx context.Context, obj *model.Project) 
 	}
 	participants := make([]*model.User, len(dbParticipants))
 	for i, p := range dbParticipants {
-		username := p.Username
-		participants[i] = &model.User{
-			ID:       p.ID.String(),
-			Username: &username,
-		}
+		participants[i] = model.DBUserToUser(p)
 	}
 	return participants, nil
 }
@@ -98,10 +89,7 @@ func (r *projectResolver) Creator(ctx context.Context, obj *model.Project) (*mod
 	if err != nil {
 		return nil, err
 	}
-	return &model.User{
-		ID:       dbUser.ID.String(),
-		Username: &dbUser.Username,
-	}, nil
+	return model.DBUserToUser(dbUser), nil
 }
 
 func (r *projectResolver) Images(ctx context.Context, obj *model.Project) ([]*model.Image, error) {
@@ -208,7 +196,12 @@ func (r *projectMutationResolver) UpdateImagePriority(ctx context.Context, obj *
 }
 
 func (r *queryResolver) SearchProjects(ctx context.Context, searchString string, options model.SearchOptions, offset int, countLimit int) ([]*model.Project, error) {
-	dbResults, err := r.queries.GetProjects(context.Background(), sqlc.GetProjectsParams{Limit: int32(countLimit), Offset: int32(offset)})
+	//dbResults, err := r.queries.GetProjects(context.Background(), sqlc.GetProjectsParams{Limit: int32(countLimit), Offset: int32(offset)})
+	dbResults, err := r.queries.SearchProjects(context.Background(), sqlc.SearchProjectsParams{
+		Limit:           int32(countLimit),
+		Offset:          int32(offset),
+		SimilarToEscape: searchString + ".*",
+	})
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,8 @@
 enum MessageAuthor {
   ME
   OTHER
+  PROJECT
+  USER
 }
 type Message {
   author: MessageAuthor!
@@ -27,7 +29,8 @@ extend type Query {
   chat(with: ID!): Chat! @isLoggedIn
   chats: [Chat!] @isLoggedIn
   getChatByUsername(withUsername: String!): Chat @isLoggedIn
-  getChatById(withUserId: ID!): Chat @isLoggedIn
+  getChatByUserId(withUserId: ID!): Chat @isLoggedIn
+  getChatByProjectId(withProjectId: ID!): Chat @isLoggedIn
 }
 extend type Mutation {
   writeMessageToUser(userId: ID!, content: String!): Boolean! @isLoggedIn
@@ -38,6 +41,7 @@ extend type ProjectMutation {
 }
 extend type Project {
   chats: [Chat!] @isLoggedIn
+  getChatByUserId(withUserId: ID!): Chat @isLoggedIn
 }
 
 scalar Time
