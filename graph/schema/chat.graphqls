@@ -1,8 +1,14 @@
 enum MessageAuthor {
-  ME
-  OTHER
-  PROJECT
-  USER
+  P1
+  P2
+}
+
+"""
+either a user or a project
+"""
+type ChatParticipant {
+  user: User
+  project: Project
 }
 type Message {
   author: MessageAuthor!
@@ -10,23 +16,23 @@ type Message {
   time: Time!
 }
 
-enum ChatType {
-  PROJECT
-  USER
-}
-
 type Chat {
-  chatType: ChatType!
-  me: User!
-  # not null if the chat is with a user
-  otherUser: User
-  # not null if the chat is with a project
-  otherProject: Project
+  """
+  first participant in the chat
+  """
+  p1: ChatParticipant!
+  """
+  second participant in the chat
+  """
+  p2: ChatParticipant!
+  """
+  me if logged in user is part of the chat (as user or project owner), null otherwise
+  """
+  me: MessageAuthor!
   messages(until: Time, count: Int! = 20): [Message!]!
 }
 
 extend type Query {
-  chat(with: ID!): Chat! @isLoggedIn
   chats: [Chat!] @isLoggedIn
   getChatByUsername(withUsername: String!): Chat @isLoggedIn
   getChatByUserId(withUserId: ID!): Chat @isLoggedIn

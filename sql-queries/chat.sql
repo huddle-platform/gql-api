@@ -15,23 +15,31 @@ SELECT * FROM messages
     ORDER BY time DESC LIMIT $4;
 
 -- name: GetChatsWithUser :many
-SELECT DISTINCT ON(sender_id) sender_id AS id FROM messages
+SELECT DISTINCT ON(messages.sender_id) users.*
+FROM messages INNER JOIN users
+ON messages.sender_id = users.id
 WHERE messages.receiver_id=$1
 UNION
-SELECT DISTINCT ON(receiver_id) receiver_id AS id FROM messages
+SELECT DISTINCT ON(messages.receiver_id) users.*
+FROM messages INNER JOIN users
+ON messages.receiver_id = users.id
 WHERE messages.sender_id=$1;
 
 -- name: GetProjectChatsWithUser :many
-SELECT DISTINCT ON(project_id) project_id AS id FROM projectMessages
-WHERE user_id=$1;
+SELECT DISTINCT ON(projects.odd) projects.*
+FROM projectMessages INNER JOIN projects
+ON projectMessages.project_id = projects.id
+WHERE projectMessages.user_id=$1;
 
 
 -- name: GetChatsWithProject :many
-SELECT DISTINCT ON(user_id) user_id AS id FROM projectMessages
-WHERE project_id=$1;
+SELECT DISTINCT ON(users.user_id) users.*
+    FROM projectMessages
+    INNER JOIN users ON projectMessages.user_id = users.id
+    WHERE projectMessages.project_id=$1;
 
 -- name: GetChatsWithCreatedProjects :many
-SELECT DISTINCT ON(projectMessages.user_id) projectMessages.user_id
+SELECT DISTINCT ON(projectMessages.user_id) projectMessages.user_id,projects.id
     FROM projectMessages INNER JOIN projects
     ON projectMessages.project_id = projects.id
     WHERE projects.creator=$1;

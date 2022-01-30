@@ -2,6 +2,7 @@ package resolvers
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 	"gitlab.lrz.de/projecthub/gql-api/graph/model"
@@ -29,4 +30,11 @@ func (r *Resolver) UserIdFromusername(ctx context.Context, username string) (str
 		return "", err
 	}
 	return user.ID.String(), nil
+}
+
+func NullstringToPointer(s sql.NullString) *string {
+	if !s.Valid {
+		return nil
+	}
+	return &s.String
 }

@@ -15,44 +15,18 @@ import (
 	"gitlab.lrz.de/projecthub/gql-api/sqlc"
 )
 
-func (r *chatResolver) Me(ctx context.Context, obj *model.Chat) (*model.User, error) {
-	return r.UserFromID(ctx, obj.Me_id)
-}
-
-func (r *chatResolver) OtherUser(ctx context.Context, obj *model.Chat) (*model.User, error) {
-	if obj.ChatType != model.ChatTypeUser {
-		return nil, nil
-	}
-	return r.UserFromID(ctx, obj.Other_id)
-}
-
-func (r *chatResolver) OtherProject(ctx context.Context, obj *model.Chat) (*model.Project, error) {
-	if obj.ChatType != model.ChatTypeProject {
-		return nil, nil
-	}
-	dbProject, err := r.queries.GetProjectByID(context.Background(), uuid.MustParse(obj.Other_id))
-	if err != nil {
-		return nil, err
-	}
-	return model.ProjectFromDBProject(dbProject), nil
-}
-
 func (r *chatResolver) Messages(ctx context.Context, obj *model.Chat, until *time.Time, count int) ([]*model.Message, error) {
-	me, err := auth.IdentityFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
+	// The user should be authenticated at this point
 	untilDate := time.Now()
 	if until != nil {
 		untilDate = *until
 	}
-	if obj.ChatType == model.ChatTypeUser {
-		if obj.Me_id != me.Id {
-			return nil, fmt.Errorf("you are not allowed to read messages of other users")
-		}
+	if obj.P1.User != nil && obj.P2.User != nil {
+		// user user chatd=obj.P2.User.ID
+
 		dbChat, err := r.queries.GetMessagesBetweenUsers(ctx, sqlc.GetMessagesBetweenUsersParams{
-			SenderID:   uuid.MustParse(obj.Me_id),
-			ReceiverID: uuid.MustParse(obj.Other_id),
+			SenderID:   uuid.MustParse(obj.P1.User.ID),
+			ReceiverID: uuid.MustParse(obj.P2.User.ID),
 			Time:       untilDate,
 			Limit:      int32(count)})
 		if err != nil {
@@ -60,9 +34,9 @@ func (r *chatResolver) Messages(ctx context.Context, obj *model.Chat, until *tim
 		}
 		res := make([]*model.Message, len(dbChat))
 		for i, dbMessage := range dbChat {
-			author := model.MessageAuthorMe
-			if dbMessage.SenderID.String() != obj.Me_id {
-				author = model.MessageAuthorOther
+			author := model.MessageAuthorP1
+			if dbMessage.SenderID.String() != obj.P1.User.ID {
+				author = model.MessageAuthorP2
 			}
 			res[i] = &model.Message{
 				Author:  author,
@@ -71,54 +45,45 @@ func (r *chatResolver) Messages(ctx context.Context, obj *model.Chat, until *tim
 			}
 		}
 		return res, nil
-	} else if obj.ChatType == model.ChatTypeProject {
-		if obj.Me_id == me.Id {
-			// you are the user, the other user is the project, obj.Other_id is the project id
-			dbChat, err := r.queries.GetMessagesBetweenUserAndProject(ctx, sqlc.GetMessagesBetweenUserAndProjectParams{
-				UserID:    uuid.MustParse(obj.Me_id),
-				ProjectID: uuid.MustParse(obj.Other_id),
-				Time:      untilDate,
-				Limit:     int32(count)})
-			if err != nil {
-				return nil, err
+	} else {
+		project := obj.P1.Project
+		user := obj.P2.User
+		p1IsUser := false
+		if project == nil {
+			project = obj.P2.Project
+			user = obj.P1.User
+			p1IsUser = true
+			if user == nil {
+				return nil, fmt.Errorf("invalid chat")
 			}
-			res := make([]*model.Message, len(dbChat))
-			for i, dbMessage := range dbChat {
-				author := model.MessageAuthorMe
-				if !dbMessage.Userissender {
-					author = model.MessageAuthorProject
-				}
-				res[i] = &model.Message{
-					Author:  author,
-					Content: dbMessage.Content,
-					Time:    dbMessage.Time,
-				}
-			}
-			return res, nil
-		} else {
-			// you are the project, the other user is the user. obj.Me_id is the project id
-			dbChat, err := r.queries.GetMessagesBetweenUserAndProject(ctx, sqlc.GetMessagesBetweenUserAndProjectParams{
-				UserID:    uuid.MustParse(obj.Other_id),
-				ProjectID: uuid.MustParse(obj.Me_id),
-				Time:      untilDate,
-				Limit:     int32(count)})
-			if err != nil {
-				return nil, err
-			}
-			res := make([]*model.Message, len(dbChat))
-			for i, dbMessage := range dbChat {
-				author := model.MessageAuthorProject
-				if dbMessage.Userissender {
-					author = model.MessageAuthorProject
-				}
-				res[i] = &model.Message{
-					Author:  author,
-					Content: dbMessage.Content,
-					Time:    dbMessage.Time,
-				}
-			}
-			return res, nil
 		}
+
+		dbChat, err := r.queries.GetMessagesBetweenUserAndProject(ctx, sqlc.GetMessagesBetweenUserAndProjectParams{
+			UserID:    uuid.MustParse(user.ID),
+			ProjectID: uuid.MustParse(project.ID),
+			Time:      untilDate,
+			Limit:     int32(count)})
+		if err != nil {
+			return nil, err
+		}
+		res := make([]*model.Message, len(dbChat))
+		for i, dbMessage := range dbChat {
+			p1IsSender := dbMessage.Userissender
+			if !p1IsUser {
+				p1IsSender = !p1IsSender
+			}
+			author := model.MessageAuthorP1
+			if !p1IsSender {
+				author = model.MessageAuthorP2
+			}
+			res[i] = &model.Message{
+				Author:  author,
+				Content: dbMessage.Content,
+				Time:    dbMessage.Time,
+			}
+		}
+		return res, nil
+
 	}
 	return nil, fmt.Errorf("unsupported chat type")
 }
@@ -164,9 +129,13 @@ func (r *projectResolver) Chats(ctx context.Context, obj *model.Project) ([]*mod
 	res := make([]*model.Chat, len(dbChats))
 	for i, dbChat := range dbChats {
 		res[i] = &model.Chat{
-			Me_id:    obj.ID,
-			Other_id: dbChat.String(),
-			ChatType: model.ChatTypeProject,
+			P1: &model.ChatParticipant{
+				Project: obj,
+			},
+			P2: &model.ChatParticipant{
+				User: model.DBUserToUser(dbChat),
+			},
+			Me: model.MessageAuthorP1,
 		}
 	}
 	return res, nil
@@ -180,10 +149,18 @@ func (r *projectResolver) GetChatByUserID(ctx context.Context, obj *model.Projec
 	if me.Id != obj.CreatorID {
 		return nil, fmt.Errorf("you are not allowed to read chats of other projects")
 	}
+	otherUser, err := r.UserFromID(ctx, withUserID)
+	if err != nil {
+		return nil, err
+	}
 	return &model.Chat{
-		Me_id:    obj.ID,
-		Other_id: withUserID,
-		ChatType: model.ChatTypeProject,
+		P1: &model.ChatParticipant{
+			Project: obj,
+		},
+		P2: &model.ChatParticipant{
+			User: otherUser,
+		},
+		Me: model.MessageAuthorP1,
 	}, nil
 }
 
@@ -196,61 +173,71 @@ func (r *projectMutationResolver) WriteMessageToUser(ctx context.Context, obj *m
 	return err == nil, nil
 }
 
-func (r *queryResolver) Chat(ctx context.Context, with string) (*model.Chat, error) {
-	me, err := auth.IdentityFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return &model.Chat{
-		Me_id:    me.Id,
-		Other_id: with,
-	}, nil
-}
-
 func (r *queryResolver) Chats(ctx context.Context) ([]*model.Chat, error) {
-	me, err := auth.IdentityFromContext(ctx)
+	me, err := r.Me(ctx)
 	if err != nil {
 		return nil, err
 	}
-	projectUserChats, err := r.queries.GetChatsWithCreatedProjects(context.Background(), uuid.MustParse(me.Id))
+	projectUserChats, err := r.queries.GetChatsWithCreatedProjects(context.Background(), uuid.MustParse(me.ID))
 	if err != nil {
 		return nil, err
 	}
-	userUserChats, err := r.queries.GetChatsWithUser(context.Background(), uuid.MustParse(me.Id))
+	userUserChats, err := r.queries.GetChatsWithUser(context.Background(), uuid.MustParse(me.ID))
 	if err != nil {
 		return nil, err
 	}
-	res := make([]*model.Chat, len(userUserChats)+len(projectUserChats))
+
+	pingedProjects, err := r.queries.GetProjectChatsWithUser(context.Background(), uuid.MustParse(me.ID))
+	if err != nil {
+		return nil, err
+	}
+	res := make([]*model.Chat, len(userUserChats)+len(projectUserChats)+len(pingedProjects))
 	for i, chatPartner := range userUserChats {
 		res[i] = &model.Chat{
-			Me_id:    me.Id,
-			Other_id: chatPartner.String(),
-			ChatType: model.ChatTypeUser,
+			P1: &model.ChatParticipant{
+				User: me,
+			},
+			P2: &model.ChatParticipant{
+				User: model.DBUserToUser(chatPartner),
+			},
+			Me: model.MessageAuthorP1,
 		}
 	}
-	for i, chatPartner := range projectUserChats {
+	for i, projectMatch := range projectUserChats {
+		// you are the project
+		project, _ := r.GetProject(ctx, projectMatch.ID.String())
+		user, _ := r.UserFromID(ctx, projectMatch.UserID.String())
 		res[i+len(userUserChats)] = &model.Chat{
-			Me_id:    me.Id,
-			Other_id: chatPartner.String(),
-			ChatType: model.ChatTypeProject,
+			P1: &model.ChatParticipant{
+				Project: project,
+			},
+			P2: &model.ChatParticipant{
+				User: user,
+			},
+			Me: model.MessageAuthorP1,
+		}
+	}
+	for i, projectMatch := range pingedProjects {
+		// you are the user
+		res[i+len(userUserChats)+len(projectUserChats)] = &model.Chat{
+			P1: &model.ChatParticipant{
+				User: me,
+			},
+			P2: &model.ChatParticipant{
+				Project: model.ProjectFromDBProject(projectMatch),
+			},
+			Me: model.MessageAuthorP1,
 		}
 	}
 	return res, nil
 }
 
 func (r *queryResolver) GetChatByUsername(ctx context.Context, withUsername string) (*model.Chat, error) {
-	me, err := auth.IdentityFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
 	otherID, err := r.UserIdFromusername(context.Background(), withUsername)
 	if err != nil {
 		return nil, err
 	}
-	return &model.Chat{
-		Me_id:    me.Id,
-		Other_id: otherID,
-	}, nil
+	return r.GetChatByUserID(ctx, otherID)
 }
 
 func (r *queryResolver) GetChatByUserID(ctx context.Context, withUserID string) (*model.Chat, error) {
@@ -258,10 +245,22 @@ func (r *queryResolver) GetChatByUserID(ctx context.Context, withUserID string) 
 	if err != nil {
 		return nil, err
 	}
+	meUser, err := r.UserFromID(ctx, me.Id)
+	if err != nil {
+		return nil, err
+	}
+	otherUser, err := r.UserFromID(ctx, withUserID)
+	if err != nil {
+		return nil, err
+	}
 	return &model.Chat{
-		Me_id:    me.Id,
-		Other_id: withUserID,
-		ChatType: model.ChatTypeUser,
+		P1: &model.ChatParticipant{
+			User: meUser,
+		},
+		P2: &model.ChatParticipant{
+			User: otherUser,
+		},
+		Me: model.MessageAuthorP1,
 	}, nil
 }
 
@@ -270,10 +269,22 @@ func (r *queryResolver) GetChatByProjectID(ctx context.Context, withProjectID st
 	if err != nil {
 		return nil, err
 	}
+	meUser, err := r.UserFromID(ctx, me.Id)
+	if err != nil {
+		return nil, err
+	}
+	project, err := r.GetProject(ctx, withProjectID)
+	if err != nil {
+		return nil, err
+	}
 	return &model.Chat{
-		Me_id:    me.Id,
-		Other_id: withProjectID,
-		ChatType: model.ChatTypeProject,
+		P1: &model.ChatParticipant{
+			User: meUser,
+		},
+		P2: &model.ChatParticipant{
+			Project: project,
+		},
+		Me: model.MessageAuthorP1,
 	}, nil
 }
 
