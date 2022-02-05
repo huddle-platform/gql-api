@@ -23,6 +23,7 @@ type Project {
   createdAt: Time
   # if the current user saved this project
   saved: Boolean!
+  tags: [String!]!
 }
 
 type ProjectMutation {
@@ -35,6 +36,8 @@ type ProjectMutation {
   removeImage(id: ID!): Boolean!
   updateImageDescription(id: ID!, newDescription: String): Boolean!
   updateImagePriority(id: ID!, newPriority: Float!): Boolean!
+  addTag(tag: String!): Boolean!
+  removeTag(tag: String!): Boolean!
 }
 
 type Location {
@@ -49,7 +52,7 @@ type Coordinate {
 
 input SearchOptions {
   filters: [String!]
-  cathegroy: String
+  tag: String
 }
 
 extend type Query {

@@ -128,6 +128,14 @@ func (r *projectResolver) Saved(ctx context.Context, obj *model.Project) (bool, 
 	return false, nil
 }
 
+func (r *projectResolver) Tags(ctx context.Context, obj *model.Project) ([]string, error) {
+	tags, err := r.queries.GetProjectTags(ctx, uuid.MustParse(obj.ID))
+	if err != nil {
+		return nil, err
+	}
+	return tags, nil
+}
+
 func (r *projectMutationResolver) AddParticipant(ctx context.Context, obj *model.ProjectMutation, id string) (bool, error) {
 	err := r.queries.AddParticipantToProject(context.Background(), sqlc.AddParticipantToProjectParams{ProjectID: uuid.MustParse(obj.ID), UserID: uuid.MustParse(id)})
 	if err != nil {
@@ -195,13 +203,41 @@ func (r *projectMutationResolver) UpdateImagePriority(ctx context.Context, obj *
 	return err == nil, err
 }
 
+func (r *projectMutationResolver) AddTag(ctx context.Context, obj *model.ProjectMutation, tag string) (bool, error) {
+	err := r.queries.TagProject(context.Background(), sqlc.TagProjectParams{
+		Name:      tag,
+		ProjectID: uuid.MustParse(obj.ID),
+	})
+	return err == nil, err
+}
+
+func (r *projectMutationResolver) RemoveTag(ctx context.Context, obj *model.ProjectMutation, tag string) (bool, error) {
+	err := r.queries.UntagProject(context.Background(), sqlc.UntagProjectParams{
+		Name:      tag,
+		ProjectID: uuid.MustParse(obj.ID),
+	})
+	return err == nil, err
+}
+
 func (r *queryResolver) SearchProjects(ctx context.Context, searchString string, options model.SearchOptions, offset int, countLimit int) ([]*model.Project, error) {
 	//dbResults, err := r.queries.GetProjects(context.Background(), sqlc.GetProjectsParams{Limit: int32(countLimit), Offset: int32(offset)})
-	dbResults, err := r.queries.SearchProjects(context.Background(), sqlc.SearchProjectsParams{
-		Limit:  int32(countLimit),
-		Offset: int32(offset),
-		Name:   "%" + searchString + "%",
-	})
+	var dbResults []sqlc.Project
+	var err error
+	if options.Tag != nil {
+		// Tag name comes first, then search string name
+		dbResults, err = r.queries.SearchProjectsWithTag(context.Background(), sqlc.SearchProjectsWithTagParams{
+			Limit:  int32(countLimit),
+			Offset: int32(offset),
+			Name:   *options.Tag,
+			Name_2: "%" + searchString + "%",
+		})
+	} else {
+		dbResults, err = r.queries.SearchProjects(context.Background(), sqlc.SearchProjectsParams{
+			Limit:  int32(countLimit),
+			Offset: int32(offset),
+			Name:   "%" + searchString + "%",
+		})
+	}
 	if err != nil {
 		return nil, err
 	}
