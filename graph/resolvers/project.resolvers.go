@@ -269,9 +269,9 @@ func (r *queryResolver) SavedProjects(ctx context.Context) ([]*model.Project, er
 	return results, nil
 }
 
-func (r *queryResolver) AvailableTags(ctx context.Context, count int, offset int) ([]*model.Tag, error) {
+func (r *queryResolver) AvailableTags(ctx context.Context, limit int, offset int) ([]*model.Tag, error) {
 	dbRes, err := r.queries.GetTagsByCount(context.Background(), sqlc.GetTagsByCountParams{
-		Limit:  int32(count),
+		Limit:  int32(limit),
 		Offset: int32(offset),
 	})
 	if err != nil {

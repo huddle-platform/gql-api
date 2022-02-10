@@ -69,7 +69,7 @@ extend type Query {
   ): [Project!]!
   getProject(id: ID!): Project
   savedProjects: [Project!]
-  availableTags(count: Int! = 4, offset: Int! = 0): [Tag!]!
+  availableTags(limit: Int! = 4, offset: Int! = 0): [Tag!]!
 }
 
 input LocationInput {
