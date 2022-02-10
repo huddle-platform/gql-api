@@ -55,6 +55,11 @@ input SearchOptions {
   tag: String
 }
 
+type Tag {
+  name: String!
+  count: Int!
+}
+
 extend type Query {
   searchProjects(
     searchString: String!
@@ -64,6 +69,7 @@ extend type Query {
   ): [Project!]!
   getProject(id: ID!): Project
   savedProjects: [Project!]
+  availableTags(count: Int! = 4, offset: Int! = 0): [Tag!]!
 }
 
 input LocationInput {

@@ -269,6 +269,24 @@ func (r *queryResolver) SavedProjects(ctx context.Context) ([]*model.Project, er
 	return results, nil
 }
 
+func (r *queryResolver) AvailableTags(ctx context.Context, count int, offset int) ([]*model.Tag, error) {
+	dbRes, err := r.queries.GetTagsByCount(context.Background(), sqlc.GetTagsByCountParams{
+		Limit:  int32(count),
+		Offset: int32(offset),
+	})
+	if err != nil {
+		return nil, err
+	}
+	res := make([]*model.Tag, len(dbRes))
+	for i, dbTag := range dbRes {
+		res[i] = &model.Tag{
+			Name:  dbTag.Name,
+			Count: int(dbTag.Count),
+		}
+	}
+	return res, nil
+}
+
 // Project returns generated.ProjectResolver implementation.
 func (r *Resolver) Project() generated.ProjectResolver { return &projectResolver{r} }
 

@@ -86,3 +86,9 @@ LIMIT $1 OFFSET $2;
 SELECT name
 from taggings
 WHERE project_id = $1;
+-- name: GetTagsByCount :many
+SELECT name, COUNT(*) as count
+FROM taggings
+GROUP BY name
+ORDER BY count DESC
+LIMIT $1 OFFSET $2;
